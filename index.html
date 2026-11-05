@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+<title>Corn-ered Cyber Maze</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rye&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one-screen-at-a-time escape room; night-field stage up top, plank panels below, a slim status rail. Deliberately single dark theme (a corn maze at midnight). */
+:root{
+  --night:#0d1230; --night-2:#161d44; --plank:#1f2752; --plank-edge:#36407a;
+  --husk:#f4ead2; --husk-dim:#c9bfa6; --lantern:#ffb53d; --pumpkin:#ff8a3d;
+  --teal:#6fd6c8; --ok:#7fe08f; --bad:#ff7b7b; --dirt:#5a3f26;
+  --f-display:"Rye","Rockwell Extra Bold","Georgia",serif;
+  --f-body:"Atkinson Hyperlegible","Verdana","Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono","Consolas","Menlo",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--night);color:var(--husk)}
+body{font-family:var(--f-body);font-size:17px;line-height:1.55;
+  background:radial-gradient(1200px 600px at 80% -10%,#2a2f6a 0%,transparent 60%),var(--night);
+  min-height:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--lantern);outline-offset:3px;border-radius:6px}
+h1,h2,h3{text-wrap:balance;line-height:1.15;margin:0}
+p{margin:0}
+code,.mono{font-family:var(--f-mono)}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(13,18,48,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--plank-edge);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--night)}
+.bar-in{max-width:1040px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.who{font-weight:700;color:var(--lantern);font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:12ch}
+.slots{display:flex;gap:4px;flex:1;justify-content:center;min-width:0}
+.slot{width:28px;height:32px;border:2px dashed var(--plank-edge);border-radius:6px;display:grid;place-items:center;font-family:var(--f-display);font-size:16px;color:var(--husk-dim)}
+.slot.got{border-style:solid;border-color:var(--lantern);color:var(--night);background:var(--lantern)}
+.iconbtn{background:var(--plank);border:1px solid var(--plank-edge);border-radius:8px;padding:6px 10px;font-size:14px;min-height:40px}
+.iconbtn:hover{border-color:var(--lantern)}
+
+.app{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.screen{display:flex;flex-direction:column;gap:18px}
+.screen:focus{outline:none}
+
+.btn{background:var(--lantern);color:#2a1700;border:0;border-radius:10px;padding:12px 22px;font-weight:700;font-size:17px;min-height:48px;box-shadow:0 4px 0 #b06f10;transition:transform .08s}
+.btn:hover{filter:brightness(1.07)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b06f10}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--husk);border:2px solid var(--plank-edge);box-shadow:none}
+.btn.ghost:hover{border-color:var(--lantern)}
+.btn.teal{background:var(--teal);color:#06302b;box-shadow:0 4px 0 #2f8f84}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* Title */
+.title-wrap{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--plank-edge);
+  background:linear-gradient(#0b1030 0%,#232a66 62%,#3d2f50 100%);min-height:360px;display:grid;align-items:end}
+.title-wrap svg.fieldart{position:absolute;inset:0;width:100%;height:100%}
+.title-copy{position:relative;padding:28px 24px 26px;display:flex;flex-direction:column;gap:14px;max-width:640px}
+.kicker{font-family:var(--f-mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.big{font-family:var(--f-display);font-size:clamp(46px,9vw,92px);color:var(--lantern);text-shadow:0 4px 0 #7a3f05,0 0 40px rgba(255,181,61,.35);letter-spacing:.01em}
+.sub{font-family:var(--f-display);font-size:clamp(20px,3.4vw,30px);color:var(--husk)}
+.lead{color:var(--husk);max-width:65ch}
+.panel{background:var(--plank);border:1px solid var(--plank-edge);border-radius:14px;padding:20px}
+.start-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
+.start-grid>*{min-width:0}
+@media (max-width:760px){.start-grid{grid-template-columns:1fr}}
+label{font-weight:700;display:block;margin-bottom:6px}
+input[type=text]{width:100%;font:inherit;font-size:18px;background:var(--night);color:var(--husk);border:2px solid var(--plank-edge);border-radius:10px;padding:10px 12px;min-height:48px}
+input[type=text]:focus{border-color:var(--lantern);outline:none}
+.small{font-size:14px;color:var(--husk-dim)}
+.packlist{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none}
+.packlist li{display:flex;gap:10px;align-items:flex-start}
+.packlist b{color:var(--lantern)}
+
+/* Cutscene */
+.stage{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--plank-edge);background:#0b1030}
+#scene{display:block;width:100%;aspect-ratio:16/9;max-width:100%;max-height:62vh}
+.scene-tag{position:absolute;left:12px;top:12px;font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:rgba(13,18,48,.75);border:1px solid var(--plank-edge);padding:4px 10px;border-radius:99px;color:var(--teal)}
+.rec{position:absolute;right:12px;top:12px;display:flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:12px;background:rgba(13,18,48,.75);padding:4px 10px;border-radius:99px}
+.rec i{width:8px;height:8px;border-radius:50%;background:var(--bad);display:inline-block;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+.caption{display:flex;gap:14px;align-items:flex-start;background:var(--plank);border:1px solid var(--plank-edge);border-radius:14px;padding:16px 18px;min-height:96px}
+.spk{flex:none;font-family:var(--f-display);font-size:15px;padding:6px 12px;border-radius:8px;background:var(--teal);color:#06302b}
+.spk.malcaw{background:#2b2b3a;color:#ffd0d0;border:1px solid #6b4b7a}
+.cap-text{font-size:19px;min-width:0}
+.progress{height:6px;background:var(--night-2);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--lantern);transition:width .4s}
+details.transcript{font-size:15px;color:var(--husk-dim)}
+details.transcript summary{cursor:pointer}
+details.transcript p{margin:6px 0}
+.playover{position:absolute;inset:0;display:grid;place-items:center;background:rgba(8,10,30,.55)}
+
+/* Map */
+.map-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:end}
+.map-head h2{font-family:var(--f-display);font-size:clamp(26px,4vw,36px);color:var(--lantern)}
+.mapbox{border-radius:16px;overflow:hidden;border:1px solid var(--plank-edge);background:#203a22}
+#mapsvg{display:block;width:100%;height:auto}
+.node{cursor:default}
+.node.next{cursor:pointer}
+.node .ring{transform-box:fill-box;transform-origin:center}
+.node.next .ring{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.8;transform:scale(1.35)}}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--husk-dim)}
+.legend span{display:flex;gap:6px;align-items:center}
+.dot{width:14px;height:14px;border-radius:50%;display:inline-block}
+
+/* Gate */
+.gate-head{display:flex;flex-direction:column;gap:6px}
+.gate-num{font-family:var(--f-mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.gate-head h2{font-family:var(--f-display);font-size:clamp(28px,4.6vw,42px);color:var(--lantern)}
+.taunt{display:flex;gap:10px;align-items:flex-start;background:#1a1626;border:1px solid #4a3a5c;border-radius:12px;padding:12px 14px;color:#ffd9d9;font-style:italic}
+.taunt b{font-style:normal;font-family:var(--f-display);color:#ffb0b0;flex:none}
+.fb{min-height:52px;border-radius:12px;padding:12px 14px;background:var(--night-2);border:1px solid var(--plank-edge)}
+.fb.ok{border-color:var(--ok);background:#173523}
+.fb.bad{border-color:var(--bad);background:#3a1a22}
+.fb.info{border-color:var(--teal);background:#12323a}
+.fb strong{display:block}
+.gate-foot{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between}
+
+.sortlist{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.sortitem{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--plank);border:1px solid var(--plank-edge);border-radius:12px;padding:12px 14px}
+.sortitem .txt{min-width:0;flex:1 1 260px}
+.sortitem code{font-size:18px;color:var(--lantern);word-break:break-all}
+.sortitem.done{border-color:var(--ok);background:#18321f}
+.sortitem.done .opts button{opacity:.5}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--night-2);border:2px solid var(--plank-edge);border-radius:10px;padding:8px 14px;font-weight:700;min-height:44px}
+.chip:hover:not([disabled]){border-color:var(--lantern)}
+.chip.right{border-color:var(--ok);background:#1f4a2a}
+.chip.wrong{border-color:var(--bad);text-decoration:line-through;color:var(--husk-dim)}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.tag{font-family:var(--f-mono);font-size:12px;color:var(--ok);letter-spacing:.06em}
+
+.mcq{display:grid;gap:10px}
+.mcq .q{font-size:19px;font-weight:700}
+.mcq .opts{flex-direction:column}
+.mcq .chip{text-align:left;font-weight:400;padding:12px 14px}
+
+/* Email */
+.email{background:#f7f3ea;color:#20202a;border-radius:12px;overflow:hidden;border:1px solid #cfc6b2}
+.email-top{background:#e8e1d1;padding:12px 16px;display:grid;gap:4px;font-size:15px}
+.email-body{padding:16px;display:grid;gap:10px}
+.seg{all:unset;cursor:pointer;border-radius:4px;padding:1px 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone;border-bottom:2px dotted #8a8170}
+.seg:hover{background:#ffe6a8}
+.seg:focus-visible{outline:3px solid #b56a00}
+.seg.found{background:#ffd0cc;border-bottom:2px solid #c0392b;color:#7a1010}
+.seg.found::after{content:" ⚑";color:#c0392b}
+.seg.clear{background:#d9f0dc;border-bottom-color:#3f8a4b}
+.attach{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid #cfc6b2;border-radius:8px;padding:6px 10px;font-family:var(--f-mono);font-size:14px}
+.counter{font-family:var(--f-mono);color:var(--lantern)}
+
+/* Cipher */
+.cipher-box{display:grid;gap:14px}
+.cipher-text{font-family:var(--f-mono);font-size:clamp(18px,3.4vw,26px);letter-spacing:.12em;background:var(--night);border:1px solid var(--plank-edge);border-radius:10px;padding:14px;word-break:break-word}
+.cipher-text.out{color:var(--teal)}
+.alpha{overflow-x:auto;border:1px solid var(--plank-edge);border-radius:10px;background:var(--night)}
+.alpha table{border-collapse:collapse;font-family:var(--f-mono);font-size:14px}
+.alpha td,.alpha th{width:26px;text-align:center;padding:4px 0}
+.alpha th{color:var(--husk-dim);font-weight:500;text-align:left;padding:4px 8px;white-space:nowrap}
+.alpha tr.p td{color:var(--teal)}
+.dial{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dial input[type=range]{flex:1 1 200px;accent-color:var(--lantern);min-height:40px}
+.shiftval{font-family:var(--f-display);font-size:30px;color:var(--lantern);min-width:2.5ch;text-align:center}
+
+/* Firewall */
+.fw{display:grid;grid-template-columns:1fr 1.1fr;gap:16px}
+.fw>*{min-width:0}
+@media (max-width:760px){.fw{grid-template-columns:1fr}}
+.rules{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-family:var(--f-mono);font-size:14px}
+.rules li{display:flex;gap:10px;padding:8px 10px;background:var(--night);border-radius:8px;border:1px solid var(--plank-edge)}
+.rules li b{min-width:3.6em}
+.rules .blk b{color:var(--bad)}
+.rules .alw b{color:var(--ok)}
+.rules li.hit{border-color:var(--lantern);box-shadow:0 0 0 2px rgba(255,181,61,.35)}
+.packet{font-family:var(--f-mono);background:var(--night);border:2px solid var(--teal);border-radius:12px;padding:14px;display:grid;gap:4px;animation:slidein .5s ease-out}
+@keyframes slidein{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+.packet .k{color:var(--husk-dim)}
+.packet .v{color:var(--husk);font-weight:700}
+
+/* Final */
+.tiles{display:flex;gap:8px;flex-wrap:wrap}
+.tile{border:0;cursor:pointer;width:54px;height:62px;display:grid;place-items:center;font-family:var(--f-display);font-size:32px;background:var(--lantern);color:#2a1700;border-radius:10px;box-shadow:0 5px 0 #b06f10;animation:drop .5s backwards}
+@keyframes drop{from{transform:translateY(-30px) rotate(-8deg);opacity:0}}
+.lanternphone{width:min(260px,100%);background:#11162f;border:3px solid var(--teal);border-radius:24px;padding:18px;display:grid;gap:8px;text-align:center;box-shadow:0 0 30px rgba(111,214,200,.25)}
+.code{font-family:var(--f-mono);font-size:34px;letter-spacing:.18em;color:var(--teal)}
+.mfa-grid{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start}
+.mfa-grid>*{min-width:0}
+@media (max-width:700px){.mfa-grid{grid-template-columns:1fr}}
+
+/* Badge */
+.badge-wrap{display:grid;grid-template-columns:minmax(0,380px) 1fr;gap:24px;align-items:center}
+.badge-wrap>*{min-width:0}
+@media (max-width:760px){.badge-wrap{grid-template-columns:1fr;justify-items:center}}
+#badgesvg{width:100%;max-width:380px;height:auto;filter:drop-shadow(0 10px 30px rgba(255,181,61,.3))}
+.skills{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.skills li::before{content:"✓ ";color:var(--ok);font-weight:700}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+.confetti i{position:absolute;top:-20px;width:10px;height:16px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+.tile[disabled]{opacity:.3;cursor:default;box-shadow:none}
+.check{display:flex;gap:10px;align-items:flex-start;margin-top:14px}
+.check input{width:24px;height:24px;margin-top:2px;accent-color:var(--lantern);flex:none}
+.check label{margin:0}
+.mark{font-weight:700;margin-left:6px}
+/* Modal + toast */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(5,7,20,.7);display:grid;place-items:center;padding:20px}
+.modal .panel{max-width:440px;display:grid;gap:14px}
+.modal h2{font-family:var(--f-display);color:var(--lantern);font-size:24px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;pointer-events:none}
+#toast div{background:var(--teal);color:#06302b;font-weight:700;padding:12px 20px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:toast 3.2s forwards;max-width:90vw;text-align:center}
+@keyframes toast{0%{opacity:0;transform:translateY(20px)}10%,85%{opacity:1;transform:none}100%{opacity:0}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition:none!important}
+}
+</style>
+
+</head>
+<body>
+<header class="bar" id="bar" hidden>
+  <div class="bar-in">
+    <span class="who" id="who"></span>
+    <div class="slots" id="slots" aria-hidden="true"></div><span class="sr" id="slotsSr"></span>
+    <button class="iconbtn" id="soundBtn">🔊 Voice on</button>
+    <button class="iconbtn" id="exitBtn">Exit maze</button>
+  </div>
+</header>
+
+<main class="app">
+  <h1 class="sr" id="srH1" hidden>Corn-ered! The Cyber Maze Escape</h1>
+  <!-- TITLE -->
+  <section class="screen" id="s-title" tabindex="-1">
+    <div class="title-wrap">
+      <svg class="fieldart" viewBox="0 0 1000 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <radialGradient id="moonglow"><stop offset="0" stop-color="#ffd27a" stop-opacity=".9"/><stop offset=".35" stop-color="#ffb53d" stop-opacity=".25"/><stop offset="1" stop-color="#ffb53d" stop-opacity="0"/></radialGradient>
+        </defs>
+        <circle cx="820" cy="95" r="170" fill="url(#moonglow)"/>
+        <circle cx="820" cy="95" r="52" fill="#ffe2a3"/>
+        <g id="titleCorn"></g>
+      </svg>
+      <div class="title-copy">
+        <span class="kicker">Intro to Cybersecurity · Escape Room</span>
+        <h1><span class="big">Corn-ered!</span><br><span class="sub">The Cyber Maze Escape</span></h1>
+        <p class="lead">Malcaw the hacker crow has locked down the Byte Acres corn maze. Crack seven cyber gates, collect the letters of the exit password, and get out before he eats your data.</p>
+      </div>
+    </div>
+    <div class="start-grid">
+      <form class="panel" id="startForm" novalidate>
+        <label for="nameIn">Your defender name</label>
+        <input type="text" id="nameIn" maxlength="24" autocomplete="off" placeholder="First name or initials">
+        <p class="small" style="margin-top:6px">It goes on your badge. First name or initials only. Never put your full name online when you don't have to!</p>
+        <div class="check"><input type="checkbox" id="srIn"><label for="srIn">I use a screen reader<span class="small" style="display:block;font-weight:400">Turns off the character voices so they don't talk over your screen reader. Scenes play as captions you can read at your own pace.</span></label></div>
+        <p id="nameErr" class="small" style="color:var(--bad);min-height:1.4em" aria-live="polite"></p>
+        <div class="row"><button class="btn" type="submit">Enter the maze</button></div>
+      </form>
+      <div class="panel">
+        <h2 style="font-family:var(--f-display);color:var(--lantern);font-size:22px">Before you go in</h2>
+        <ul class="packlist">
+          <li><b>🔊</b><span>Turn your sound on. Kernel and Malcaw talk to you. Captions are always on screen.</span></li>
+          <li><b>🔦</b><span>Each gate you crack drops one letter of the exit password.</span></li>
+          <li><b>🌽</b><span>Stuck? Press <em>Ask Kernel</em> for a hint, or <em>Read aloud</em> to hear the question. Wrong answers just let you try again. Nothing is timed.</span></li>
+          <li><b>🏅</b><span>Escape to earn your Maze Defender badge.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CUTSCENE -->
+  <section class="screen" id="s-cut" tabindex="-1" hidden>
+    <h2 class="sr" id="cutTitle" tabindex="-1">Cutscene</h2>
+    <div class="stage">
+      <canvas id="scene" aria-hidden="true"></canvas>
+      <span class="scene-tag" id="sceneTag">Scene</span>
+      <span class="rec" aria-hidden="true"><i></i>LIVE FROM THE MAZE</span>
+      <div class="playover" id="playOver" hidden><button class="btn" id="playBtn">▶ Play scene</button></div>
+    </div>
+    <div class="progress" aria-hidden="true"><i id="cutProg"></i></div>
+    <div class="caption">
+      <span class="spk" id="capWho">Kernel</span>
+      <p class="cap-text" id="capText" aria-live="off"></p>
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="cutReplay">↺ Replay</button>
+      <button class="btn ghost" id="cutPause">❚❚ Pause</button>
+      <button class="btn" id="cutNext">Skip ▸</button>
+    </div>
+    <details class="transcript"><summary>Read the full transcript</summary><div id="transcript"></div></details>
+  </section>
+
+  <!-- MAP -->
+  <section class="screen" id="s-map" tabindex="-1" hidden>
+    <div class="map-head">
+      <div>
+        <span class="kicker">Byte Acres Corn Maze</span>
+        <h2 id="mapTitle" tabindex="-1">Follow your lantern</h2>
+      </div>
+      <div class="legend" aria-hidden="true">
+        <span><i class="dot" style="background:var(--lantern)"></i>Next gate</span>
+        <span><i class="dot" style="background:var(--teal)"></i>Cracked</span>
+        <span><i class="dot" style="background:#3a416f"></i>Locked</span>
+      </div>
+    </div>
+    <div class="mapbox"><svg id="mapsvg" viewBox="0 0 1000 620" aria-hidden="true" focusable="false"></svg></div>
+    <h3 class="sr">Maze progress</h3><ol class="sr" id="mapList"></ol>
+    <div class="panel row" style="justify-content:space-between">
+      <p id="mapMsg" style="min-width:0;flex:1 1 280px"></p>
+      <button class="btn" id="mapGo">Enter gate</button>
+    </div>
+  </section>
+
+  <!-- GATE -->
+  <section class="screen" id="s-gate" tabindex="-1" hidden>
+    <div class="gate-head">
+      <span class="gate-num" id="gNum"></span>
+      <h2 id="gTitle" tabindex="-1"></h2>
+    </div>
+    <div class="taunt" id="gTaunt"></div>
+    <div id="gBody" class="screen"></div>
+    <div class="fb info" id="gFb" aria-live="polite" tabindex="-1"></div>
+    <div class="gate-foot">
+      <button class="btn ghost" id="gMap">← Back to map</button>
+      <div class="row"><button class="btn ghost" id="gRead">🔊 Read aloud</button><button class="btn teal" id="gHint">🌽 Ask Kernel for a hint</button></div>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section class="screen" id="s-final" tabindex="-1" hidden>
+    <div class="gate-head">
+      <span class="gate-num">The Exit Gate</span>
+      <h2 tabindex="-1">Unscramble the exit password</h2>
+    </div>
+    <div class="panel screen" id="finalA">
+      <p class="lead">You collected seven letters. Malcaw scrambled them. Tap the letters in the right order, or type the password.</p>
+      <div class="tiles" id="tiles" role="group" aria-label="Your letters"></div>
+      <div class="row"><button class="btn ghost" type="button" id="pwBack">⌫ Remove last letter</button><button class="btn ghost" type="button" id="pwClear">Clear</button></div>
+      <form id="pwForm" class="row" novalidate>
+        <label for="pwIn" class="sr">Exit password</label>
+        <input type="text" id="pwIn" maxlength="12" autocomplete="off" style="max-width:280px;text-transform:uppercase;letter-spacing:.2em;font-family:var(--f-mono)" placeholder="PASSWORD">
+        <button class="btn" type="submit">Try password</button>
+      </form>
+    </div>
+    <div class="panel screen" id="finalB" hidden>
+      <div class="taunt"><b>Malcaw:</b><span>Ha! I peeked over your shoulder and stole that password. Now I can open the gate too!</span></div>
+      <div class="mfa-grid">
+        <div class="lanternphone">
+          <span class="small">🔦 Lantern Authenticator</span>
+          <span class="code" id="mfaCode" role="text">000000</span>
+          <button class="btn teal" type="button" id="mfaApprove">✓ Approve sign-in</button>
+          <button class="chip" type="button" id="mfaNew">Get a new code</button>
+        </div>
+        <div class="screen" style="gap:12px">
+          <p class="lead"><strong>Not so fast, bird.</strong> This gate uses multi-factor authentication (MFA). A password is something you <em>know</em>. The code on your lantern is something you <em>have</em>. Malcaw doesn't have your lantern.</p>
+          <p class="small">Type the 6-digit code, or press <b>Approve sign-in</b> on your lantern like a push notification. Real codes expire after about 30 seconds. This one waits for you.</p>
+          <form id="mfaForm" class="row" novalidate>
+            <label for="mfaIn" class="sr">Six-digit code</label>
+            <input type="text" id="mfaIn" inputmode="numeric" maxlength="6" autocomplete="off" style="max-width:200px;font-family:var(--f-mono);letter-spacing:.2em" placeholder="6 digits">
+            <button class="btn teal" type="submit">Verify code</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="fb info" id="fFb" aria-live="polite">Hint from Kernel: it's what a defender holds up to block an attack, and there are more than one.</div>
+  </section>
+
+  <!-- BADGE -->
+  <section class="screen" id="s-badge" tabindex="-1" hidden>
+    <div class="badge-wrap">
+      <div id="badgeHolder"></div>
+      <div class="screen" style="gap:14px">
+        <span class="kicker">You escaped!</span>
+        <h2 tabindex="-1" style="font-family:var(--f-display);font-size:clamp(30px,5vw,46px);color:var(--lantern)">Certified Maze Defender</h2>
+        <p class="lead">Malcaw is grounded. Here is everything you used to beat him:</p>
+        <ul class="skills">
+          <li>Built strong passphrases and chose a password manager</li>
+          <li>Spotted six phishing red flags</li>
+          <li>Matched attacks to the CIA triad</li>
+          <li>Cracked two Caesar ciphers</li>
+          <li>Shut down four social engineering tricks</li>
+          <li>Identified six kinds of malware</li>
+          <li>Ran a firewall rule by rule</li>
+          <li>Used MFA to stop a stolen password</li>
+        </ul>
+        <p class="small">Take a screenshot of your badge to turn in. When you exit, the maze resets for the next defender.</p>
+        <div class="row"><button class="btn" id="badgeExit">Exit maze</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="confirm" hidden role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+  <div class="panel">
+    <h2 id="cfTitle">Leave the maze?</h2>
+    <p>Exiting wipes everything: your letters, your progress and your name. The maze resets for the next defender.</p>
+    <div class="row"><button class="btn ghost" id="cfStay">Stay in the maze</button><button class="btn" id="cfGo">Exit and reset</button></div>
+  </div>
+</div>
+<div id="toast" aria-live="polite"></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+document.documentElement.lang="en";
+let srMode=false;
+const wait=ms=>srMode?Math.round(ms*2.6):ms;
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- state ---------- */
+let S;
+function fresh(){return {name:'',done:[],letters:[],start:0,hints:0};}
+S=fresh();
+
+/* ---------- sound ---------- */
+let audioOn=true, unlocked=false, actx=null;
+function tone(freqs,dur=.12,type='triangle',gap=.09){
+  if(!audioOn) return;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const t0=actx.currentTime;
+    freqs.forEach((f,i)=>{const o=actx.createOscillator(),g=actx.createGain();o.type=type;o.frequency.value=f;
+      const s=t0+i*gap;g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.15,s+.012);g.gain.exponentialRampToValueAtTime(.0001,s+dur);
+      o.connect(g);g.connect(actx.destination);o.start(s);o.stop(s+dur+.03);});
+  }catch(e){}
+}
+const sfx={ok:()=>tone([660,990],.15),bad:()=>tone([200,150],.22,'sawtooth',.13),win:()=>tone([523,659,784,1046,1318],.2,'triangle',.11),tick:()=>tone([520],.05,'square')};
+
+const tts={ok:'speechSynthesis' in window,voices:[]};
+function loadVoices(){try{tts.voices=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));}catch(e){}}
+if(tts.ok){loadVoices();try{speechSynthesis.onvoiceschanged=loadVoices;}catch(e){}}
+const VOX={kernel:{pitch:.8,rate:.98,pick:0},malcaw:{pitch:1.7,rate:1.1,pick:1}};
+function pickVoice(i){
+  const v=tts.voices; if(!v.length) return null;
+  const pref=v.filter(x=>/Google|Samantha|Daniel|Alex|Karen|Moira|Aria|Guy|Jenny|Microsoft/i.test(x.name));
+  const pool=pref.length>1?pref:v; return pool[Math.min(i,pool.length-1)];
+}
+function speak(text,who,onend,force){
+  if(!tts.ok||(!audioOn&&!force)) return false;
+  try{
+    const u=new SpeechSynthesisUtterance(text.replace(/Caw/g,'Caw!'));
+    const c=VOX[who]||VOX.kernel; u.pitch=c.pitch; u.rate=c.rate;
+    const v=pickVoice(c.pick); if(v) u.voice=v;
+    if(onend){u.onend=onend;u.onerror=onend;}
+    speechSynthesis.speak(u); return true;
+  }catch(e){return false;}
+}
+function hush(){try{if(tts.ok) speechSynthesis.cancel();}catch(e){}}
+
+$('#soundBtn').addEventListener('click',()=>{
+  audioOn=!audioOn; const b=$('#soundBtn');
+  b.textContent=audioOn?'🔊 Voice on':'🔇 Voice off';
+  if(!audioOn) hush();
+  $('#capText').setAttribute('aria-live',(srMode||!audioOn)?'polite':'off');
+});
+
+function toast(msg){const t=$('#toast');t.innerHTML='';const d=document.createElement('div');d.textContent=msg;t.appendChild(d);}
+
+/* ---------- screens ---------- */
+const SCREENS=['s-title','s-cut','s-map','s-gate','s-final','s-badge'];
+function show(id){
+  SCREENS.forEach(s=>{$('#'+s).hidden=(s!==id);});
+  $('#bar').hidden=(id==='s-title');
+  $('#srH1').hidden=(id==='s-title');
+  window.scrollTo(0,0);
+  const el=$('#'+id); const h=el.querySelector('h2[tabindex]')||el;
+  setTimeout(()=>{try{h.focus({preventScroll:true});}catch(e){}},30);
+  if(id==='s-cut') startLoop(); else stopLoop();
+}
+
+/* ---------- story ---------- */
+const CUTS={
+  intro:{tag:'Scene 1 · The Lockdown',prop:'lock',lines:[
+    {who:'kernel',text:"Howdy, defender! I'm Kernel, the scarecrow who runs cybersecurity for Byte Acres Farm."},
+    {who:'malcaw',text:"Caw caw! And I'm Malcaw, the greatest hacker crow alive. I just locked down this entire corn maze!"},
+    {who:'kernel',text:"Malcaw hid seven gates behind cyber traps. Every gate you crack drops one letter of the exit password."},
+    {who:'malcaw',text:"Nobody has ever escaped my maze. Your data looks delicious."},
+    {who:'kernel',text:"Don't let him rattle you. Think like a defender, and ask me for a hint any time. Grab your lantern. Let's go!"}]},
+  g1:{tag:'Gate 1 · The Password Patch',prop:'lock',lines:[
+    {who:'malcaw',text:"Welcome to my Password Patch! I grow weak passwords here. They are so easy to pick."},
+    {who:'kernel',text:"Sort every password as strong or weak. Remember: long and unpredictable beats short and clever."}]},
+  g2:{tag:'Gate 2 · The Phishing Scarecrow',prop:'email',lines:[
+    {who:'malcaw',text:"I sent you a totally real email. Definitely not a trick. Caw."},
+    {who:'kernel',text:"Phishing emails always leave clues. Click every red flag you can find. There are six of them."}]},
+  g3:{tag:'Gate 3 · The CIA Silo',prop:'silo',lines:[
+    {who:'kernel',text:"Every defender protects three things: confidentiality, integrity and availability. We call it the CIA triad."},
+    {who:'malcaw',text:"I attack all three! Bet you can't tell which one I'm hitting."}]},
+  g4:{tag:'Gate 4 · The Caesar Crow',prop:'wheel',lines:[
+    {who:'malcaw',text:"I scrambled my secret notes with a cipher. You'll never read them!"},
+    {who:'kernel',text:"That's a Caesar cipher. Every letter slides the same number of places. Turn the wheel until the message makes sense."}]},
+  g5:{tag:'Gate 5 · The Hayride Hustle',prop:'wagon',lines:[
+    {who:'kernel',text:"Hop on the hayride. Hackers don't always hack computers. Sometimes they hack people."},
+    {who:'malcaw',text:"I am very charming. You will definitely want to help me."}]},
+  g6:{tag:'Gate 6 · The Malware Field',prop:'bug',lines:[
+    {who:'malcaw',text:"My malware critters are loose in the field! Viruses, worms, trojans. Oh my!"},
+    {who:'kernel',text:"Name each critter by how it behaves. Knowing your enemy is half the defense."}]},
+  g7:{tag:'Gate 7 · The Firewall Fence',prop:'fence',lines:[
+    {who:'kernel',text:"Last gate. You are the firewall now. Check each packet against the rules, top to bottom. The first rule that matches wins."},
+    {who:'malcaw',text:"My packets will sneak right through your fence!"}]},
+  exit:{tag:'The Exit Gate',prop:'gate',lines:[
+    {who:'malcaw',text:"Fine. You have all seven letters. But can you spell the password? Caw!"},
+    {who:'kernel',text:"Unscramble the letters, defender. Then we walk out of here together."}]},
+  outro:{tag:'Final Scene · Escaped',prop:'badge',lines:[
+    {who:'malcaw',text:"Impossible! My traps! My beautiful traps!"},
+    {who:'kernel',text:"Strong passwords, sharp eyes, and smart choices. That is how defenders win."},
+    {who:'kernel',text:"You've earned your Maze Defender badge. Wear it proudly!"}]}
+};
+
+/* ---------- canvas scene ---------- */
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h){this.rect(x,y,w,h);};}
+const cv=$('#scene'),cx=cv.getContext('2d');
+let W=0,H=0,raf=0,prop='lock',speaker=null,talkUntil=0;
+const stars=Array.from({length:70},()=>({x:Math.random(),y:Math.random()*.5,r:Math.random()*1.4+.3,p:Math.random()*6}));
+const layers=[0,1,2].map(L=>{const n=[22,16,12][L];return Array.from({length:n},(_,i)=>({x:(i+Math.random()*.6)/n,h:[.34,.44,.56][L]*(0.85+Math.random()*.3),p:Math.random()*6}));});
+const flies=Array.from({length:14},()=>({x:Math.random(),y:.45+Math.random()*.4,p:Math.random()*6,s:.3+Math.random()*.6}));
+function size(){const r=cv.getBoundingClientRect();const d=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=Math.round(W*d);cv.height=Math.round(H*d);cx.setTransform(d,0,0,d,0,0);}
+addEventListener('resize',()=>{if(!$('#s-cut').hidden) size();});
+
+function stalk(x,base,h,sway,col,tas){
+  const top=base-h,tx=x+sway;
+  cx.strokeStyle=col;cx.lineWidth=Math.max(2,h*.03);cx.lineCap='round';
+  cx.beginPath();cx.moveTo(x,base);cx.quadraticCurveTo(x+sway*.2,base-h*.5,tx,top);cx.stroke();
+  cx.fillStyle=col;
+  for(let k=0;k<3;k++){const yy=base-h*(.3+k*.2),dir=k%2?1:-1,xx=x+sway*(.3+k*.2);
+    cx.beginPath();cx.moveTo(xx,yy);cx.quadraticCurveTo(xx+dir*h*.22,yy-h*.12,xx+dir*h*.34+sway*.4,yy+h*.04);cx.quadraticCurveTo(xx+dir*h*.18,yy-h*.02,xx,yy);cx.fill();}
+  if(tas){cx.strokeStyle=tas;cx.lineWidth=2;for(let k=-1;k<=1;k++){cx.beginPath();cx.moveTo(tx,top);cx.lineTo(tx+k*h*.05+sway*.1,top-h*.08);cx.stroke();}
+    cx.fillStyle='#e9b949';cx.beginPath();cx.ellipse(x+sway*.55,base-h*.55,h*.025,h*.07,.3,0,7);cx.fill();}
+}
+function kernel(x,g,s,t,talking){
+  const bob=RM?0:Math.sin(t*2)*2*s+(talking?Math.sin(t*9)*2*s:0);
+  const y=g+bob;
+  cx.fillStyle='#6b4a2a';cx.fillRect(x-5*s,y-170*s,10*s,170*s);
+  cx.fillRect(x-80*s,y-130*s,160*s,9*s);
+  // shirt + arms
+  cx.fillStyle='#b8433a';cx.fillRect(x-36*s,y-140*s,72*s,74*s);
+  cx.fillRect(x-80*s,y-138*s,160*s,22*s);
+  cx.strokeStyle='rgba(20,20,40,.35)';cx.lineWidth=2*s;
+  for(let k=-30;k<=30;k+=14){cx.beginPath();cx.moveTo(x+k*s,y-140*s);cx.lineTo(x+k*s,y-66*s);cx.stroke();}
+  for(let k=-128;k<=-70;k+=14){cx.beginPath();cx.moveTo(x-36*s,y+k*s);cx.lineTo(x+36*s,y+k*s);cx.stroke();}
+  // straw tufts
+  cx.strokeStyle='#e9c46a';cx.lineWidth=2.5*s;
+  [[-80,-127],[80,-127],[-18,-66],[0,-66],[18,-66]].forEach(([dx,dy],i)=>{for(let k=0;k<5;k++){cx.beginPath();cx.moveTo(x+dx*s,y+dy*s);const a=(i<2?(dx<0?Math.PI:0):Math.PI/2)+(k-2)*.25;cx.lineTo(x+dx*s+Math.cos(a)*14*s,y+dy*s+Math.sin(a)*14*s);cx.stroke();}});
+  // badge
+  cx.fillStyle='#6fd6c8';cx.beginPath();cx.arc(x+18*s,y-118*s,8*s,0,7);cx.fill();
+  cx.fillStyle='#06302b';cx.font=`700 ${7*s}px monospace`;cx.textAlign='center';cx.fillText('SEC',x+18*s,y-115.5*s);
+  // head
+  cx.fillStyle='#d8b77a';cx.beginPath();cx.arc(x,y-168*s,28*s,0,7);cx.fill();
+  cx.strokeStyle='#a98a52';cx.lineWidth=1.5*s;cx.beginPath();cx.arc(x,y-168*s,28*s,0,7);cx.stroke();
+  cx.fillStyle='#1c1c26';[-10,10].forEach(d=>{cx.beginPath();cx.arc(x+d*s,y-174*s,5*s,0,7);cx.fill();});
+  cx.fillStyle='#d8b77a';[-10,10].forEach(d=>{cx.fillRect(x+d*s-.8*s,y-178*s,1.6*s,8*s);cx.fillRect(x+d*s-4*s,y-174.8*s,8*s,1.6*s);});
+  const m=talking?(RM?5:3+Math.abs(Math.sin(t*16))*7):0;
+  cx.fillStyle='#3a2414';cx.beginPath();cx.ellipse(x,y-156*s,11*s,(1.5+m)*s,0,0,7);cx.fill();
+  cx.strokeStyle='#3a2414';cx.lineWidth=1.5*s;for(let k=-9;k<=9;k+=4.5){cx.beginPath();cx.moveTo(x+k*s,y-160*s-m*s);cx.lineTo(x+k*s,y-152*s+m*s);cx.stroke();}
+  // hat
+  cx.fillStyle='#6b4a2a';cx.beginPath();cx.ellipse(x,y-192*s,46*s,9*s,0,0,7);cx.fill();
+  cx.beginPath();cx.moveTo(x-24*s,y-192*s);cx.lineTo(x-18*s,y-226*s);cx.lineTo(x+18*s,y-226*s);cx.lineTo(x+24*s,y-192*s);cx.fill();
+  cx.fillStyle='#6fd6c8';cx.fillRect(x-23*s,y-202*s,46*s,7*s);
+}
+function malcaw(x,g,s,t,talking){
+  cx.fillStyle='#4a3524';cx.fillRect(x-10*s,g-110*s,20*s,110*s);
+  cx.fillStyle='#5b4330';cx.fillRect(x-14*s,g-114*s,28*s,8*s);
+  const hop=RM?0:(talking?Math.abs(Math.sin(t*7))*8*s:Math.abs(Math.sin(t*1.5))*2*s);
+  const y=g-114*s-hop;
+  // tail
+  cx.fillStyle='#14141c';cx.beginPath();cx.moveTo(x-20*s,y-24*s);cx.lineTo(x-52*s,y-6*s);cx.lineTo(x-46*s,y-20*s);cx.lineTo(x-56*s,y-22*s);cx.closePath();cx.fill();
+  // body
+  cx.beginPath();cx.ellipse(x,y-36*s,30*s,24*s,-.2,0,7);cx.fill();
+  cx.fillStyle='rgba(120,80,170,.35)';cx.beginPath();cx.ellipse(x-4*s,y-44*s,16*s,8*s,-.3,0,7);cx.fill();
+  // wing
+  const fl=RM?0:Math.sin(t*(talking?14:2.5))*(talking?.8:.15);
+  cx.save();cx.translate(x-6*s,y-44*s);cx.rotate(-.3-fl);cx.fillStyle='#22222e';cx.beginPath();cx.ellipse(-14*s,0,26*s,10*s,0,0,7);cx.fill();cx.restore();
+  // legs
+  cx.strokeStyle='#e8913a';cx.lineWidth=3*s;[-6,8].forEach(d=>{cx.beginPath();cx.moveTo(x+d*s,y-14*s);cx.lineTo(x+d*s,y+hop);cx.stroke();});
+  // head
+  cx.fillStyle='#14141c';cx.beginPath();cx.arc(x+24*s,y-62*s,17*s,0,7);cx.fill();
+  // beak
+  const b=talking?(RM?.3:.15+Math.abs(Math.sin(t*16))*.4):0;
+  cx.fillStyle='#f0a030';
+  cx.beginPath();cx.moveTo(x+36*s,y-66*s);cx.lineTo(x+62*s,y-62*s-b*10*s);cx.lineTo(x+38*s,y-58*s);cx.fill();
+  cx.beginPath();cx.moveTo(x+38*s,y-58*s);cx.lineTo(x+58*s,y-54*s+b*14*s);cx.lineTo(x+36*s,y-54*s);cx.fill();
+  // shades
+  cx.fillStyle='#0b0b10';cx.fillRect(x+16*s,y-70*s,24*s,9*s);
+  cx.strokeStyle='#ff5e5e';cx.lineWidth=1.5*s;cx.strokeRect(x+16*s,y-70*s,24*s,9*s);
+  cx.fillStyle='#ff5e5e';cx.fillRect(x+30*s,y-68*s,3*s,2*s);
+  // tiny hacker tuft
+  cx.strokeStyle='#14141c';cx.lineWidth=3*s;cx.beginPath();cx.moveTo(x+22*s,y-78*s);cx.lineTo(x+16*s,y-90*s);cx.moveTo(x+27*s,y-79*s);cx.lineTo(x+26*s,y-92*s);cx.stroke();
+}
+function drawProp(x,y,r,t){
+  const f=RM?0:Math.sin(t*1.6)*r*.06;y+=f;
+  cx.save();cx.shadowColor='rgba(255,181,61,.55)';cx.shadowBlur=r*.5;
+  cx.lineWidth=r*.09;cx.lineJoin='round';
+  if(prop==='lock'){cx.strokeStyle='#c9c3b0';cx.beginPath();cx.arc(x,y-r*.25,r*.42,Math.PI,0);cx.stroke();
+    cx.fillStyle='#ffb53d';cx.beginPath();cx.roundRect(x-r*.62,y-r*.25,r*1.24,r*.95,r*.12);cx.fill();
+    cx.shadowBlur=0;cx.fillStyle='#2a1700';cx.beginPath();cx.arc(x,y+r*.12,r*.13,0,7);cx.fill();cx.fillRect(x-r*.05,y+r*.12,r*.1,r*.3);}
+  else if(prop==='email'){cx.fillStyle='#f7f3ea';cx.fillRect(x-r*.75,y-r*.45,r*1.5,r);cx.shadowBlur=0;cx.strokeStyle='#8a8170';cx.lineWidth=r*.05;
+    cx.beginPath();cx.moveTo(x-r*.75,y-r*.45);cx.lineTo(x,y+r*.1);cx.lineTo(x+r*.75,y-r*.45);cx.stroke();
+    // fishing hook + line
+    cx.strokeStyle='#c9c3b0';cx.lineWidth=2;cx.beginPath();cx.moveTo(x+r*.4,y-r*1.3);cx.lineTo(x+r*.4,y-r*.62);cx.stroke();
+    cx.strokeStyle='#ff7b7b';cx.lineWidth=r*.06;cx.beginPath();cx.arc(x+r*.28,y-r*.62,r*.12,0,Math.PI);cx.stroke();}
+  else if(prop==='silo'){cx.fillStyle='#b8433a';cx.fillRect(x-r*.45,y-r*.6,r*.9,r*1.3);cx.fillStyle='#c9c3b0';cx.beginPath();cx.arc(x,y-r*.6,r*.45,Math.PI,0);cx.fill();
+    cx.shadowBlur=0;cx.fillStyle='#f4ead2';cx.font=`700 ${r*.26}px "Rye",serif`;cx.textAlign='center';['C','I','A'].forEach((c,i)=>cx.fillText(c,x,y-r*.25+i*r*.34));}
+  else if(prop==='wheel'){const a=RM?0:t*.6;cx.fillStyle='#1f2752';cx.beginPath();cx.arc(x,y,r*.8,0,7);cx.fill();cx.strokeStyle='#ffb53d';cx.stroke();
+    cx.shadowBlur=0;cx.fillStyle='#ffb53d';cx.font=`700 ${r*.14}px monospace`;cx.textAlign='center';cx.textBaseline='middle';
+    for(let i=0;i<26;i++){const an=a+i/26*Math.PI*2;cx.fillText(String.fromCharCode(65+i),x+Math.cos(an)*r*.64,y+Math.sin(an)*r*.64);}
+    cx.fillStyle='#6fd6c8';for(let i=0;i<26;i++){const an=-a*.7+i/26*Math.PI*2;cx.fillText(String.fromCharCode(65+i),x+Math.cos(an)*r*.38,y+Math.sin(an)*r*.38);}
+    cx.textBaseline='alphabetic';}
+  else if(prop==='wagon'){cx.fillStyle='#e9c46a';cx.beginPath();cx.ellipse(x,y-r*.25,r*.75,r*.35,0,Math.PI,0);cx.fill();cx.fillStyle='#8a5a32';cx.fillRect(x-r*.85,y-r*.28,r*1.7,r*.35);
+    cx.shadowBlur=0;cx.fillStyle='#2b2b3a';const sp=RM?0:t*3;[-.5,.5].forEach(d=>{cx.beginPath();cx.arc(x+d*r,y+r*.2,r*.22,0,7);cx.fill();cx.strokeStyle='#c9c3b0';cx.lineWidth=2;for(let k=0;k<4;k++){const an=sp+k*Math.PI/4;cx.beginPath();cx.moveTo(x+d*r-Math.cos(an)*r*.2,y+r*.2-Math.sin(an)*r*.2);cx.lineTo(x+d*r+Math.cos(an)*r*.2,y+r*.2+Math.sin(an)*r*.2);cx.stroke();}});}
+  else if(prop==='bug'){const w=RM?0:Math.sin(t*10)*.2;cx.strokeStyle='#1c1c26';cx.lineWidth=r*.05;
+    for(let k=-1;k<=1;k++){[-1,1].forEach(sd=>{cx.beginPath();cx.moveTo(x,y+k*r*.25);cx.lineTo(x+sd*r*.7,y+k*r*.35+w*r*sd);cx.stroke();});}
+    cx.fillStyle='#ff5e5e';cx.beginPath();cx.ellipse(x,y,r*.45,r*.6,0,0,7);cx.fill();cx.shadowBlur=0;
+    cx.fillStyle='#1c1c26';cx.beginPath();cx.arc(x,y-r*.62,r*.22,0,7);cx.fill();cx.fillRect(x-r*.02,y-r*.55,r*.04,r*1.1);
+    [[-.2,-.15],[.22,.1],[-.18,.3]].forEach(([a,b])=>{cx.beginPath();cx.arc(x+a*r,y+b*r,r*.08,0,7);cx.fill();});}
+  else if(prop==='fence'){cx.shadowBlur=0;for(let i=-3;i<=3;i++){const px=x+i*r*.3;
+      const fh=RM?1:1+Math.sin(t*8+i)*.15;cx.fillStyle='#ff8a3d';cx.beginPath();cx.moveTo(px-r*.1,y-r*.55);cx.quadraticCurveTo(px,y-r*(.95*fh),px+r*.1,y-r*.55);cx.fill();
+      cx.fillStyle='#ffd27a';cx.beginPath();cx.moveTo(px-r*.05,y-r*.55);cx.quadraticCurveTo(px,y-r*(.75*fh),px+r*.05,y-r*.55);cx.fill();
+      cx.fillStyle='#8a5a32';cx.fillRect(px-r*.08,y-r*.55,r*.16,r*1.15);}
+    cx.fillRect(x-r,y-r*.25,r*2,r*.1);cx.fillRect(x-r,y+r*.25,r*2,r*.1);}
+  else if(prop==='gate'){cx.fillStyle='#5b4330';cx.fillRect(x-r,y-r*.8,r*.18,r*1.5);cx.fillRect(x+r*.82,y-r*.8,r*.18,r*1.5);cx.fillRect(x-r,y-r*.8,r*2,r*.16);
+    cx.shadowBlur=0;for(let i=0;i<7;i++){const on=i<S.letters.length;cx.fillStyle=on?'#ffb53d':'#2b2f55';cx.beginPath();cx.roundRect(x-r*.72+i*r*.21,y-r*.4,r*.17,r*.24,3);cx.fill();
+      if(on){cx.fillStyle='#2a1700';cx.font=`${r*.16}px "Rye",serif`;cx.textAlign='center';cx.fillText(S.letters[i],x-r*.635+i*r*.21,y-r*.22);}}}
+  else if(prop==='badge'){const sp=RM?0:t;cx.fillStyle='#ffb53d';cx.beginPath();
+    for(let i=0;i<10;i++){const an=sp*.4+i*Math.PI/5-Math.PI/2,rr=i%2?r*.42:r*.85;cx.lineTo(x+Math.cos(an)*rr,y+Math.sin(an)*rr);}cx.closePath();cx.fill();
+    cx.shadowBlur=0;cx.fillStyle='#2a1700';cx.font=`${r*.3}px "Rye",serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('★',x,y);cx.textBaseline='alphabetic';}
+  cx.restore();
+}
+function frame(ms){
+  const t=ms/1000; if(!W) size();
+  const sky=cx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#0a0f2e');sky.addColorStop(.6,'#262c68');sky.addColorStop(1,'#43324f');
+  cx.fillStyle=sky;cx.fillRect(0,0,W,H);
+  stars.forEach(s=>{cx.globalAlpha=RM?.8:.45+.45*Math.sin(t*1.5+s.p);cx.fillStyle='#fff7e0';cx.beginPath();cx.arc(s.x*W,s.y*H,s.r,0,7);cx.fill();});cx.globalAlpha=1;
+  const mx=W*.84,my=H*.2,mr=H*.08;const mg=cx.createRadialGradient(mx,my,mr*.6,mx,my,mr*4);mg.addColorStop(0,'rgba(255,210,122,.45)');mg.addColorStop(1,'rgba(255,181,61,0)');
+  cx.fillStyle=mg;cx.fillRect(0,0,W,H);cx.fillStyle='#ffe2a3';cx.beginPath();cx.arc(mx,my,mr,0,7);cx.fill();
+  const ground=H*.88;
+  const cols=['#1f2a48','#29452f','#3f5f2c'],tas=[null,null,'#d9a441'];
+  layers.forEach((L,li)=>{const base=ground-(2-li)*H*.06;L.forEach(st=>{const sw=RM?0:Math.sin(t*(.8+li*.2)+st.p+st.x*4)*H*.012*(li+1);stalk(st.x*W,base,st.h*H,sw,cols[li],tas[li]);});
+    if(li===1){ // actors between mid and near layers
+      const s=H/400, tk=performance.now()<talkUntil;
+      if(speaker){const sx=speaker==='kernel'?W*.25:W*.74;const gl=cx.createRadialGradient(sx,ground-H*.3,10,sx,ground-H*.3,H*.4);gl.addColorStop(0,speaker==='kernel'?'rgba(111,214,200,.28)':'rgba(255,94,94,.25)');gl.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=gl;cx.fillRect(0,0,W,H);}
+      kernel(W*.25,ground,s,t,speaker==='kernel'&&tk);
+      malcaw(W*.72,ground,s,t,speaker==='malcaw'&&tk);
+      drawProp(W*.5,H*.36,H*.14,t);
+    }});
+  cx.fillStyle='#3a2a1c';cx.fillRect(0,ground,W,H-ground);
+  cx.fillStyle='#4d3823';cx.beginPath();cx.ellipse(W*.5,ground+H*.06,W*.4,H*.035,0,0,7);cx.fill();
+  flies.forEach(f=>{const fx=(f.x+(RM?0:Math.sin(t*f.s+f.p)*.03))*W,fy=(f.y+(RM?0:Math.cos(t*f.s*1.3+f.p)*.03))*H;cx.globalAlpha=RM?.7:.35+.6*Math.abs(Math.sin(t*2+f.p));cx.fillStyle='#ffe58a';cx.beginPath();cx.arc(fx,fy,2.2,0,7);cx.fill();});
+  cx.globalAlpha=1;
+  if(!RM||ms<200) raf=requestAnimationFrame(frame); else raf=0;
+}
+function startLoop(){cancelAnimationFrame(raf);requestAnimationFrame(()=>{size();raf=requestAnimationFrame(frame);});}
+function stopLoop(){cancelAnimationFrame(raf);raf=0;}
+function redrawStatic(){if(RM&&!$('#s-cut').hidden){requestAnimationFrame(frame);}}
+
+/* ---------- cutscene player ---------- */
+const P={def:null,i:0,token:0,timers:[],onDone:null,paused:false,ended:false};
+function clearT(){P.timers.forEach(clearTimeout);P.timers=[];}
+function playCut(key,onDone){
+  hush();clearT();
+  const def=CUTS[key];P.def=def;P.i=0;P.onDone=onDone;P.paused=false;P.ended=false;
+  prop=def.prop;speaker=null;
+  $('#sceneTag').textContent=def.tag;$('#cutTitle').textContent=def.tag;
+  $('#transcript').innerHTML=def.lines.map(l=>`<p><b>${l.who==='kernel'?'Kernel':'Malcaw'}:</b> ${esc(l.text)}</p>`).join('');
+  $('#cutNext').textContent='Skip ▸';$('#cutPause').textContent='❚❚ Pause';$('#cutPause').disabled=false;
+  $('#capWho').textContent='';$('#capText').textContent='';$('#cutProg').style.width='0';
+  $('#capText').setAttribute('aria-live',(srMode||!audioOn)?'polite':'off');
+  $('.transcript').open=srMode;
+  show('s-cut');
+  if(unlocked){$('#playOver').hidden=true;P.timers.push(setTimeout(runLine,500));}
+  else{$('#playOver').hidden=false;}
+}
+function runLine(){
+  const tok=++P.token;clearT();
+  const L=P.def.lines[P.i];speaker=L.who;
+  const w=$('#capWho');w.textContent=L.who==='kernel'?'Kernel':'Malcaw';w.className='spk '+L.who;
+  $('#capText').textContent=L.text;
+  $('#cutProg').style.width=((P.i+1)/P.def.lines.length*100)+'%';
+  const words=L.text.split(/\s+/).length;
+  let fin=false;
+  const next=()=>{if(fin||tok!==P.token) return;fin=true;talkUntil=0;redrawStatic();P.timers.push(setTimeout(()=>{if(tok===P.token) advance();},550));};
+  const spoke=speak(L.text,L.who,next);
+  const est=spoke?words*620+4500:(srMode?words*480+3000:words*340+1400);
+  talkUntil=performance.now()+(spoke?words*330:words*300);
+  redrawStatic();
+  P.timers.push(setTimeout(next,est));
+}
+function advance(){
+  P.i++;
+  if(P.i>=P.def.lines.length){P.ended=true;speaker=null;talkUntil=0;$('#cutNext').textContent='Continue ▸';$('#cutPause').disabled=true;redrawStatic();try{$('#cutNext').focus();}catch(e){}return;}
+  runLine();
+}
+function finishCut(){hush();clearT();P.token++;const f=P.onDone;P.onDone=null;if(f) f();}
+$('#playBtn').addEventListener('click',()=>{unlocked=true;$('#playOver').hidden=true;runLine();});
+$('#cutNext').addEventListener('click',finishCut);
+$('#cutReplay').addEventListener('click',()=>{hush();clearT();P.i=0;P.ended=false;P.paused=false;$('#cutPause').disabled=false;$('#cutPause').textContent='❚❚ Pause';$('#cutNext').textContent='Skip ▸';$('#playOver').hidden=true;unlocked=true;runLine();});
+$('#cutPause').addEventListener('click',()=>{
+  if(P.ended) return;
+  if(!P.paused){P.paused=true;P.token++;clearT();hush();talkUntil=0;$('#cutPause').textContent='▶ Resume';}
+  else{P.paused=false;$('#cutPause').textContent='❚❚ Pause';runLine();}
+});
+
+/* ---------- gates ---------- */
+const fb=(html,kind)=>{const e=$('#gFb');e.className='fb '+(kind||'info');e.innerHTML=html;};
+function wrongFx(el){sfx.bad();if(el&&!RM){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');}}
+
+function markBtn(b,ok){const m=document.createElement('span');m.className='mark';m.setAttribute('aria-hidden','true');m.textContent=ok?'✓':'✕';b.appendChild(m);
+  const s=document.createElement('span');s.className='sr';s.textContent=ok?' (correct)':' (not correct)';b.appendChild(s);}
+function focusFb(){try{$('#gFb').focus({preventScroll:true});}catch(e){}}
+// Sort list: every item gets a category button
+function sortList(body,items,choices,onDone,intro){
+  let left=items.length;
+  body.insertAdjacentHTML('beforeend',`<p class="lead">${intro}</p><p class="counter">Sorted: <span>0</span>/${items.length}</p><ul class="sortlist"></ul>`);
+  const ul=body.querySelector('.sortlist'),cnt=body.querySelector('.counter span');
+  shuffle(items).forEach(it=>{
+    const li=document.createElement('li');li.className='sortitem';
+    li.innerHTML=`<div class="txt">${it.html}</div><div class="opts" role="group"></div>`;
+    const g=li.querySelector('.opts');
+    choices.forEach(c=>{const b=document.createElement('button');b.className='chip';b.type='button';b.textContent=c;
+      b.addEventListener('click',()=>{
+        if(li.classList.contains('done')) return;
+        if(c===it.a){li.classList.add('done');b.classList.add('right');markBtn(b,true);
+          g.querySelectorAll('button').forEach(x=>{if(x!==b)x.disabled=true;});b.setAttribute('aria-disabled','true');
+          left--;cnt.textContent=items.length-left;sfx.ok();fb(`<strong>Correct: ${esc(c)}.</strong> ${it.why}`,'ok');
+          const nx=ul.querySelector('.sortitem:not(.done) .chip');
+          setTimeout(()=>{if(nx) nx.focus();else focusFb();},wait(60));
+          if(!left) setTimeout(onDone,wait(700));}
+        else{if(!b.classList.contains('wrong')){b.classList.add('wrong');markBtn(b,false);}wrongFx(li);fb(`<strong>Not ${esc(c)}.</strong> ${it.tip}`,'bad');}
+      });g.appendChild(b);});
+    ul.appendChild(li);
+  });
+}
+// Multiple choice
+function mcq(body,q,opts,onOk,noFocus){
+  const box=document.createElement('div');box.className='mcq panel';
+  box.innerHTML=`<p class="q" tabindex="-1">${q}</p><div class="opts" role="group"></div>`;
+  const g=box.querySelector('.opts');
+  shuffle(opts).forEach(o=>{const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=o.t;
+    b.addEventListener('click',()=>{if(box.dataset.done) return;
+      if(o.ok){box.dataset.done=1;b.classList.add('right');markBtn(b,true);focusFb();g.querySelectorAll('button').forEach(x=>x.disabled=true);sfx.ok();fb(`<strong>Yes!</strong> ${o.why}`,'ok');setTimeout(onOk,wait(1100));}
+      else{if(!b.classList.contains('wrong')){b.classList.add('wrong');markBtn(b,false);}wrongFx(box);fb(`<strong>Not quite.</strong> ${o.why}`,'bad');}});
+    g.appendChild(b);});
+  body.appendChild(box);
+  try{box.scrollIntoView({behavior:RM?'auto':'smooth',block:'center'});}catch(e){}
+  if(!noFocus) setTimeout(()=>{try{box.querySelector('.q').focus({preventScroll:true});}catch(e){}},60);
+  return box;
+}
+// Sequence of cards, one at a time
+function sequence(body,items,onDone,label){
+  let i=0;const wrap=document.createElement('div');wrap.className='screen';body.appendChild(wrap);
+  const step=()=>{
+    if(i>=items.length){onDone();return;}
+    const it=items[i];wrap.innerHTML=`<p class="counter" tabindex="-1">${label} ${i+1} of ${items.length}</p>${it.html||''}`;
+    mcq(wrap,it.q,it.opts,()=>{i++;step();},true);
+    if(i>0) setTimeout(()=>{try{wrap.querySelector('.counter').focus();}catch(e){}},60);
+  };step();
+}
+
+const GATES=[
+ {key:'g1',name:'The Password Patch',letter:'L',
+  taunt:"My crops are full of juicy passwords. Pick one, any one!",
+  hint:"Length matters most. A long passphrase of random words is strong. Swapping letters for symbols (like @ for a) fools nobody, because cracking tools try those swaps first.",
+  render(body,done){
+    sortList(body,[
+      {html:'<code>cornfield1</code>',a:'Weak',why:'A dictionary word plus one number is cracked in seconds.',tip:'Look at it like a hacker: one common word and a single digit.'},
+      {html:'<code>P@ssw0rd!</code>',a:'Weak',why:'Symbol swaps on the word "password" are in every cracking list.',tip:'Swapping a for @ and o for 0 is the first thing cracking tools try.'},
+      {html:'<code>Tractor-Moonlight-Pickle-Jazz-42</code>',a:'Strong',why:'A long passphrase of random, unrelated words. Long beats clever.',tip:'Count the characters. Length is the biggest factor in password strength.'},
+      {html:'<code>12345678</code>',a:'Weak',why:'It is one of the most common passwords on Earth.',tip:'Would this be on a "most common passwords" list?'},
+      {html:'<code>Maddie2010</code> <span class="small">(her dog\'s name + birth year)</span>',a:'Weak',why:'Pet names and birth years are easy to find on social media.',tip:'Could someone figure this out from your Instagram?'},
+      {html:'<code>q7#Lm!vR2x$Ze9wK</code>',a:'Strong',why:'Sixteen random characters with no pattern. Perfect for a password manager to store.',tip:'There is no word, name or pattern in this one.'}
+    ],['Strong','Weak'],()=>{
+      fb('<strong>All sorted!</strong> One more question to unlock the gate.','info');
+      mcq(body,'You have 40 accounts. What is the safest way to keep 40 different strong passwords?',[
+        {t:'Use a password manager',ok:true,why:'A password manager creates and remembers a unique strong password for every account. You only remember one master passphrase.'},
+        {t:'Use one great password everywhere',ok:false,why:'If one site is breached, attackers try that password on all your other accounts. That is called credential stuffing.'},
+        {t:'Write them on a sticky note on your monitor',ok:false,why:'Anyone who walks by can read them.'},
+        {t:'Save them in a note called "passwords" on your phone',ok:false,why:'That note is not encrypted like a password manager, and it is the first place a thief would look.'}
+      ],done);
+    },'Malcaw planted six passwords. Sort each one as <b>Strong</b> or <b>Weak</b>.');
+  }},
+ {key:'g2',name:'The Phishing Scarecrow',letter:'D',
+  taunt:"Open my email. Click my link. Trust me. I'm a bank. Caw.",
+  hint:"Check who sent it letter by letter, look for pressure and panic, generic greetings, links that go to strange websites, requests for private info, and attachments with sneaky file extensions.",
+  render(body,done){
+    const segs={
+      from:{flag:true,why:'Lookalike sender. That is "paypa1" with the number 1, not the letter L.'},
+      to:{flag:false},
+      subj:{flag:true,why:'Fake urgency. Scammers rush you so you don\'t stop and think.'},
+      greet:{flag:true,why:'Generic greeting. Your real bank knows your name.'},
+      body1:{flag:false},
+      link:{flag:true,why:'The link goes to a strange domain ending in .ru, not the real company website. Hover before you click!'},
+      ask:{flag:true,why:'No real company asks for your password or Social Security number by email. Ever.'},
+      att:{flag:true,why:'Double extension. "pdf.exe" is a program pretending to be a document. Opening it runs malware.'},
+      sig:{flag:false}
+    };
+    const need=Object.values(segs).filter(s=>s.flag).length;let found=0;
+    body.insertAdjacentHTML('beforeend',`<p class="lead">Click every part of this email that looks suspicious.</p><p class="counter" aria-live="polite">Red flags found: <span>0</span>/${need}</p>
+      <div class="email">
+        <div class="email-top">
+          <div><b>From:</b> <button class="seg" data-k="from">PayPaI Security &lt;support@paypa1-security.co&gt;</button></div>
+          <div><b>To:</b> <button class="seg" data-k="to">you@student.byteacres.edu</button></div>
+          <div><b>Subject:</b> <button class="seg" data-k="subj">URGENT!!! Your account will be SUSPENDED in 24 hours</button></div>
+        </div>
+        <div class="email-body">
+          <p><button class="seg" data-k="greet">Dear Valued Customer,</button></p>
+          <p><button class="seg" data-k="body1">We noticed some unusual sign-in activity on your account this week.</button></p>
+          <p>To keep your account open, verify now: <button class="seg" data-k="link">http://paypa1-verify.login-secure.ru/account</button></p>
+          <p><button class="seg" data-k="ask">Then reply with your password and the last 4 digits of your Social Security number.</button></p>
+          <p><span class="attach">📎 <button class="seg" data-k="att">Account_Statement.pdf.exe</button></span></p>
+          <p><button class="seg" data-k="sig">Thank you, The Security Team</button></p>
+        </div>
+      </div>`);
+    const cnt=body.querySelector('.counter span');
+    body.querySelectorAll('.seg').forEach(b=>b.addEventListener('click',()=>{
+      const s=segs[b.dataset.k];if(b.classList.contains('found')) return;
+      if(s.flag){b.classList.add('found');const sp=document.createElement('span');sp.className='sr';sp.textContent=' (red flag found)';b.appendChild(sp);found++;cnt.textContent=found;sfx.ok();fb(`<strong>Red flag!</strong> ${s.why}`,'ok');
+        if(found===need) setTimeout(()=>{fb('<strong>All six red flags found.</strong> One last check before the gate opens.','info');
+          mcq(body,'You get an email like this from your real bank. What should you do?',[
+            {t:'Go to the bank website by typing the address yourself, or call the number on your card',ok:true,why:'Always use a contact method you already trust, never one from the suspicious message. Then report the email as phishing.'},
+            {t:'Click the link but don\'t type anything',ok:false,why:'Just clicking can load malware or tell the scammer your email is active.'},
+            {t:'Reply and ask if it is real',ok:false,why:'The scammer will happily say yes.'},
+            {t:'Forward it to friends to warn them',ok:false,why:'Now your friends have a dangerous link too. Report it instead.'}
+          ],done);},700);}
+      else{if(!b.classList.contains('clear')){b.classList.add('clear');const sp=document.createElement('span');sp.className='sr';sp.textContent=' (looks normal)';b.appendChild(sp);}sfx.tick();fb('That part looks normal. Keep hunting.','info');}
+    }));
+  }},
+ {key:'g3',name:'The CIA Silo',letter:'S',
+  taunt:"Your secrets, your data, your Wi-Fi. I'll take them all!",
+  hint:"Confidentiality = keeping secrets secret (who can SEE it). Integrity = keeping data correct and unchanged (can you TRUST it). Availability = keeping things working when people need them (can you USE it).",
+  render(body,done){
+    sortList(body,[
+      {html:'Malcaw posts everyone\'s report card grades on a public website.',a:'Confidentiality',why:'Private information was seen by people who should not see it.',tip:'Did the data change, or did the wrong people get to see it?'},
+      {html:'Malcaw secretly changes a $20 bank transfer to $2,000.',a:'Integrity',why:'The data was altered without permission, so it can no longer be trusted.',tip:'The data is still private and still online. What happened to it?'},
+      {html:'Malcaw floods the school website with fake traffic so nobody can sign up for classes.',a:'Availability',why:'This is a denial-of-service (DoS) attack. The site exists, but people can\'t use it.',tip:'Nothing was stolen or changed. What do people lose?'},
+      {html:'The farm encrypts its customer list so stolen copies can\'t be read.',a:'Confidentiality',why:'Encryption protects secrets even if the file is stolen.',tip:'Encryption protects who can read something.'},
+      {html:'A download page shows a hash code so you can check the file wasn\'t tampered with.',a:'Integrity',why:'A matching hash proves the file is exactly what the creator published.',tip:'A hash answers one question: is this file exactly the original?'},
+      {html:'The farm keeps backups and a generator so the system stays up during storms.',a:'Availability',why:'Backups and backup power keep systems running and data recoverable.',tip:'What is the goal of keeping the power and servers running?'}
+    ],['Confidentiality','Integrity','Availability'],done,'Malcaw is attacking the silo. Decide which part of the <b>CIA triad</b> each scenario is about.');
+  }},
+ {key:'g4',name:'The Caesar Crow',letter:'H',
+  taunt:"My notes are scrambled. Totally uncrackable. Totally.",
+  hint:"Slide the shift until the decoded line turns into real English words. Try short words first: a three-letter word is often THE. The first note uses a small shift. The second one is bigger, so keep turning.",
+  render(body,done){
+    const A='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const enc=(s,k)=>s.replace(/[A-Z]/g,c=>A[(A.indexOf(c)+k)%26]);
+    const dec=(s,k)=>enc(s,(26-k)%26);
+    const notes=[{p:'NEVER SHARE YOUR PASSWORD',k:3},{p:'THE SCARECROW SEES ALL',k:11}];
+    let n=0;
+    const box=document.createElement('div');box.className='panel cipher-box';body.appendChild(box);
+    const draw=()=>{
+      const note=notes[n],ct=enc(note.p,note.k);
+      box.innerHTML=`<p class="counter" tabindex="-1">Secret note ${n+1} of ${notes.length}</p>
+        <div><span class="small">Malcaw's scrambled note</span><div class="cipher-text" role="text" aria-label="${ct.split(' ').map(w=>w.split('').join(' ')).join(', ')}">${ct}</div></div>
+        <div class="dial"><button class="chip" type="button" id="sMinus" aria-label="Shift down">−</button>
+          <label for="shift" class="sr">Shift amount</label><input type="range" id="shift" min="0" max="25" value="0">
+          <button class="chip" type="button" id="sPlus" aria-label="Shift up">+</button>
+          <span class="shiftval" id="sVal" aria-hidden="true">0</span></div><p class="sr" id="decAnn" aria-live="polite"></p>
+        <div class="alpha"><table><tbody><tr><th>Scrambled</th>${[...A].map(c=>`<td>${c}</td>`).join('')}</tr><tr class="p" id="pRow"></tr></tbody></table></div>
+        <div><span class="small">Decoded with your shift</span><div class="cipher-text out" id="out"></div></div>
+        <div class="row"><button class="btn" type="button" id="lockIn">Lock in this shift</button></div>`;
+      const r=box.querySelector('#shift'),out=box.querySelector('#out'),sv=box.querySelector('#sVal'),pr=box.querySelector('#pRow'),ann=box.querySelector('#decAnn');let at=0;
+      const upd=(silent)=>{const k=+r.value;sv.textContent=k;out.textContent=dec(ct,k);
+        clearTimeout(at);if(silent!==true) at=setTimeout(()=>{ann.textContent=`Shift ${k}. Decoded: ${dec(ct,k)}`;},450);
+        pr.innerHTML=`<th>Decoded</th>`+[...A].map(c=>`<td>${dec(c,k)}</td>`).join('');};
+      const set=v=>{r.value=(v+26)%26;sfx.tick();upd();};
+      r.addEventListener('input',upd);
+      box.querySelector('#sMinus').addEventListener('click',()=>set(+r.value-1));
+      box.querySelector('#sPlus').addEventListener('click',()=>set(+r.value+1));
+      box.querySelector('#lockIn').addEventListener('click',()=>{
+        if(dec(ct,+r.value)===note.p){sfx.ok();focusFb();fb(`<strong>Cracked it!</strong> Shift ${note.k}: "${note.p}". ${n===0?'One more note to go.':'Both notes decoded.'}`,'ok');n++;
+          if(n<notes.length) setTimeout(draw,wait(1100));
+          else setTimeout(()=>mcq(body,'In a Caesar cipher, the secret number of places you shift is called the…',[
+            {t:'Key',ok:true,why:'The key is the secret that locks and unlocks a cipher. Caesar ciphers are weak because there are only 25 possible keys, so anyone can try them all. That\'s called a brute-force attack.'},
+            {t:'Hash',ok:false,why:'A hash is a one-way fingerprint of data. It can\'t be reversed back into the message.'},
+            {t:'Firewall',ok:false,why:'A firewall filters network traffic. It doesn\'t scramble messages.'},
+            {t:'Password manager',ok:false,why:'That stores passwords. The secret here has a different name.'}
+          ],done),900);}
+        else{wrongFx(box);fb('<strong>Still scrambled.</strong> If the decoded line isn\'t real words yet, keep turning the wheel.','bad');}
+      });
+      upd(true);
+      if(n>0) setTimeout(()=>{try{box.querySelector('.counter').focus();}catch(e){}},60);
+    };draw();
+  }},
+ {key:'g5',name:'The Hayride Hustle',letter:'E',
+  taunt:"I'm not a hacker. I'm just a friendly bird who needs a little favor.",
+  hint:"Social engineers create trust or pressure. The safe move is almost always: don't hand anything over, and verify through a separate channel you already trust (a known phone number, the front office, talking face to face).",
+  render(body,done){
+    body.insertAdjacentHTML('beforeend','<p class="lead">Four strangers flag down your hayride. Choose the smartest response to each one.</p>');
+    sequence(body,[
+      {html:'<div class="taunt"><b>📞 Caller:</b><span>"Hi, this is Mike from the school IT help desk. We\'re fixing a glitch on your account. I just need your password real quick."</span></div>',
+       q:'What do you do?',opts:[
+        {t:'Hang up and call the IT help desk using the number on the school website',ok:true,why:'This trick is called <b>pretexting</b>: inventing a believable story. Real IT staff never need your password.'},
+        {t:'Give it, since he knows your name and school',ok:false,why:'Names and schools are easy to find online. Knowing them doesn\'t prove anything.'},
+        {t:'Ask him to email you first, then reply with it',ok:false,why:'An email can be faked too. Never share a password by any channel.'}]},
+      {html:'<div class="taunt"><b>🥧 Stranger:</b><span>"Arms full of pies! Can you hold the badge door for me? I left my ID in the truck."</span></div>',
+       q:'The door to the farm office needs a badge. What do you do?',opts:[
+        {t:'Politely point them to the front desk so staff can check them in',ok:true,why:'This is <b>tailgating</b> (or piggybacking): following someone through a secure door. Being kind and secure at the same time is possible.'},
+        {t:'Hold the door. They have pies, so they must work here',ok:false,why:'Carrying something is a classic tailgating move. It makes saying no feel rude.'},
+        {t:'Lend them your badge',ok:false,why:'Now they can get in anywhere you can, and anything they do is logged under your name.'}]},
+      {html:'<div class="taunt"><b>💾 In the parking lot:</b><span>A USB drive labeled "SENIOR GRADES — PRIVATE".</span></div>',
+       q:'What do you do with it?',opts:[
+        {t:'Turn it in to IT without plugging it in',ok:true,why:'This is <b>baiting</b>: leaving infected drives where curious people will find them. Plugging one in can install malware instantly.'},
+        {t:'Plug it into a school computer to find the owner',ok:false,why:'That is exactly what the attacker hopes you\'ll do.'},
+        {t:'Take it home and check it on your own laptop',ok:false,why:'Now your personal laptop is infected instead.'}]},
+      {html:'<div class="taunt"><b>💬 New account "jaylen.real.2":</b><span>"bro it\'s Jaylen, got locked out. Just sent a code to your phone, can you text it to me??"</span></div>',
+       q:'What do you do?',opts:[
+        {t:'Don\'t send the code. Check with Jaylen in person or on his real account',ok:true,why:'This is <b>impersonation</b>. That code is a login code for YOUR account. Sending it lets the attacker take over.'},
+        {t:'Send it. Jaylen is your friend',ok:false,why:'You don\'t actually know it\'s Jaylen. A brand-new account is a huge warning sign.'},
+        {t:'Send it, then change your password later',ok:false,why:'By then the attacker has already locked you out.'}]}
+    ],done,'Stranger');
+  }},
+ {key:'g6',name:'The Malware Field',letter:'S',
+  taunt:"Meet my critters! They're adorable. And they eat computers.",
+  hint:"Focus on HOW it spreads or WHAT it does: needs a host file (virus), spreads by itself (worm), disguised as something good (trojan), demands money (ransomware), watches you (spyware), records keys (keylogger).",
+  render(body,done){
+    const T=['Virus','Worm','Trojan','Ransomware','Spyware','Keylogger'];
+    const why={Virus:'A virus attaches to a file or program and spreads when that file is run or shared.',Worm:'A worm spreads across networks all by itself. Nobody has to click anything.',Trojan:'A trojan pretends to be something useful, like the Trojan horse in the Greek story.',Ransomware:'Ransomware encrypts your files and demands payment. Backups are the best defense.',Spyware:'Spyware secretly watches what you do and sends it to someone else.',Keylogger:'A keylogger records every key you press, including passwords.'};
+    const mk=(desc,a,html)=>({html:`<div class="panel"><p class="small">Critter spotted</p><p style="font-size:19px">${desc}</p></div>`,q:'Which malware is this?',opts:T.map(t=>({t,ok:t===a,why:t===a?why[t]:`Not quite. ${why[t]} Does that match this critter?`}))});
+    body.insertAdjacentHTML('beforeend','<p class="lead">Six critters are loose. Identify each one by how it behaves.</p>');
+    sequence(body,shuffle([
+      mk('It hops from computer to computer across the farm network all by itself. No one clicked anything.','Worm'),
+      mk('A "free corn-maze speedrun game" download that secretly opens a back door for Malcaw.','Trojan'),
+      mk('Every file on the farm computer is locked. A note says: "Pay 2 Bitcoin to get your files back."','Ransomware'),
+      mk('It hides inside a homework file and spreads to every computer that opens that file.','Virus'),
+      mk('It quietly records every key you type, including your passwords.','Keylogger'),
+      mk('It quietly tracks every website you visit and sends the list to Malcaw.','Spyware')
+    ]),done,'Critter');
+  }},
+ {key:'g7',name:'The Firewall Fence',letter:'I',
+  taunt:"My packets look totally harmless. Let them all in!",
+  hint:"Start at Rule 1 and go down. The FIRST rule that matches decides. Check the source IP against Rule 1 before you look at the port. If nothing matches, Rule 5 blocks it.",
+  render(body,done){
+    body.insertAdjacentHTML('beforeend',`<p class="lead">Packets are knocking on the fence. Check each one against the rules from top to bottom. The <b>first</b> rule that matches decides.</p>
+      <div class="fw"><div class="panel"><h3 style="font-family:var(--f-display);color:var(--lantern);font-size:20px;margin-bottom:10px">Firewall rules</h3>
+        <ol class="rules" id="rules">
+          <li class="blk" data-r="1"><b>BLOCK</b><span>1. Source IP 66.6.6.6 (Malcaw's nest)</span></li>
+          <li class="blk" data-r="2"><b>BLOCK</b><span>2. Port 23 (Telnet, unencrypted)</span></li>
+          <li class="alw" data-r="3"><b>ALLOW</b><span>3. Port 443 (HTTPS websites)</span></li>
+          <li class="alw" data-r="4"><b>ALLOW</b><span>4. Port 53 (DNS lookups)</span></li>
+          <li class="blk" data-r="5"><b>BLOCK</b><span>5. Everything else (default deny)</span></li>
+        </ol></div><div id="pk"></div></div>`);
+    const pk=body.querySelector('#pk');
+    const P=(ip,port,svc,a,r,why)=>({ip,port,svc,a,r,why});
+    const list=[
+      P('142.250.72.14',443,'HTTPS','ALLOW',3,'Rule 3 matches: secure web traffic is allowed.'),
+      P('10.0.0.23',23,'Telnet','BLOCK',2,'Rule 2 matches: Telnet sends passwords in plain text, so it\'s blocked.'),
+      P('66.6.6.6',443,'HTTPS','BLOCK',1,'Rule 1 matches first: anything from Malcaw\'s nest is blocked, even on an allowed port. Order matters!'),
+      P('8.8.8.8',53,'DNS','ALLOW',4,'Rule 4 matches: DNS turns website names into IP addresses.'),
+      P('203.0.113.9',3389,'Remote Desktop','BLOCK',5,'No rule allows port 3389, so Rule 5 (default deny) blocks it.'),
+      P('151.101.1.69',443,'HTTPS','ALLOW',3,'Rule 3 matches: allowed.'),
+      P('198.51.100.4',80,'HTTP','BLOCK',5,'No allow rule mentions port 80, so default deny blocks it. Unencrypted web traffic is a risk.'),
+      P('66.6.6.6',53,'DNS','BLOCK',1,'Rule 1 matches before Rule 4. Malcaw is blocked no matter what port he uses.')
+    ];
+    let i=0;
+    const hit=r=>body.querySelectorAll('#rules li').forEach(li=>li.classList.toggle('hit',+li.dataset.r===r));
+    const step=()=>{
+      hit(0);
+      if(i>=list.length){done();return;}
+      const p=list[i];
+      pk.innerHTML=`<p class="counter" tabindex="-1">Packet ${i+1} of ${list.length}</p>
+        <div class="packet"><span class="k">Source IP</span><span class="v">${p.ip}</span><span class="k">Destination port</span><span class="v">${p.port} · ${p.svc}</span></div>
+        <div class="row" style="margin-top:12px"><button class="btn teal" type="button" data-a="ALLOW">✓ Allow</button><button class="btn" type="button" data-a="BLOCK" style="background:var(--bad);box-shadow:0 4px 0 #a83a3a;color:#2a0707">✕ Block</button></div>`;
+      pk.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+        if(b.dataset.a===p.a){sfx.ok();hit(p.r);focusFb();fb(`<strong>${p.a==='ALLOW'?'Allowed':'Blocked'}.</strong> ${p.why}`,'ok');pk.querySelectorAll('button').forEach(x=>x.disabled=true);i++;setTimeout(()=>{step();if(i<list.length) setTimeout(()=>{try{pk.querySelector('.counter').focus();}catch(e){}},60);},wait(1600));}
+        else{wrongFx(pk.querySelector('.packet'));fb('<strong>Check the rules again.</strong> Start at Rule 1 and stop at the first one that matches this packet.','bad');}
+      }));
+    };step();
+  }}
+];
+
+let cur=null;
+function openGate(idx){
+  const g=GATES[idx];cur=idx;
+  playCut(g.key,()=>{
+    $('#gNum').textContent=`Gate ${idx+1} of ${GATES.length}`;
+    $('#gTitle').textContent=g.name;
+    $('#gTaunt').innerHTML=`<b>Malcaw:</b><span>${esc(g.taunt)}</span>`;
+    fb('Read carefully, defender. You can try again if you miss.','info');
+    const body=$('#gBody');body.innerHTML='';
+    show('s-gate');
+    g.render(body,()=>completeGate(idx));
+  });
+}
+$('#gHint').addEventListener('click',()=>{if(cur==null) return;S.hints++;const h=GATES[cur].hint;fb(`<strong>Kernel says:</strong> ${esc(h)}`,'info');focusFb();hush();speak(h,'kernel');});
+function txt(el){if(!el) return '';const c=el.cloneNode(true);c.querySelectorAll('.sr,.mark').forEach(x=>x.remove());return c.textContent.replace(/\s+/g,' ').trim();}
+$('#gRead').addEventListener('click',()=>{
+  const body=$('#gBody');let parts=[];
+  const mq=[...body.querySelectorAll('.mcq:not([data-done])')].pop();
+  if(mq){const card=mq.parentElement!==body?mq.parentElement.querySelector('.taunt, .panel:not(.mcq)'):null;if(card) parts.push(txt(card));
+    parts.push(txt(mq.querySelector('.q')));parts.push('Your choices are: '+[...mq.querySelectorAll('.chip:not(.wrong)')].map(txt).join('. Or, '));}
+  else{const lead=body.querySelector('.lead');if(lead) parts.push(txt(lead));
+    const si=body.querySelector('.sortitem:not(.done)');if(si) parts.push(txt(si.querySelector('.txt'))+'. Choose: '+[...si.querySelectorAll('.chip')].map(txt).join(', or '));
+    const pkt=body.querySelector('.packet');if(pkt) parts.push(txt(pkt));
+    const ct=body.querySelector('.cipher-text.out');if(ct) parts.push('Decoded so far: '+ct.textContent);}
+  hush();if(!speak(parts.join('. '),'kernel',null,true)) fb('Read aloud needs a browser with speech. Try Chrome or Edge.','info');
+});
+$('#gMap').addEventListener('click',()=>{hush();renderMap();show('s-map');});
+
+function completeGate(idx){
+  const g=GATES[idx];
+  if(!S.done.includes(idx)){S.done.push(idx);S.letters.push(g.letter);}
+  sfx.win();renderSlots();
+  const msg=`Gate cracked! You earned the letter ${g.letter}.`;
+  toast(msg);hush();speak(msg,'kernel');
+  renderMap(idx);show('s-map');
+}
+
+/* ---------- map ---------- */
+const PATH="M 70 560 C 180 560 220 470 320 480 S 470 560 540 470 S 470 330 360 330 S 170 300 190 200 S 330 80 460 120 S 620 250 700 180 S 820 60 900 120 S 930 300 820 350 S 830 520 940 560";
+let mapBuilt=false,pts=[],lens=[];
+function buildMap(){
+  const svg=$('#mapsvg');
+  let corn='';for(let i=0;i<260;i++){const x=Math.random()*1000,y=Math.random()*620,h=14+Math.random()*16;corn+=`<path d="M${x.toFixed(0)} ${y.toFixed(0)}q2 -${(h/2).toFixed(0)} 0 -${h.toFixed(0)}" stroke="${Math.random()<.5?'#3d6b33':'#2f5528'}" stroke-width="3" fill="none" stroke-linecap="round"/>`;}
+  svg.innerHTML=`<defs>
+      <pattern id="rows" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(-8)"><rect width="26" height="26" fill="#24402a"/><path d="M0 13h26" stroke="#2c4d31" stroke-width="8"/></pattern>
+      <radialGradient id="lglow"><stop offset="0" stop-color="#ffd27a" stop-opacity=".9"/><stop offset="1" stop-color="#ffb53d" stop-opacity="0"/></radialGradient>
+      <radialGradient id="vig" cx=".5" cy=".5" r=".7"><stop offset=".6" stop-color="#0d1230" stop-opacity="0"/><stop offset="1" stop-color="#0d1230" stop-opacity=".75"/></radialGradient>
+    </defs>
+    <rect width="1000" height="620" fill="url(#rows)"/>${corn}
+    <path d="${PATH}" fill="none" stroke="#2a1c10" stroke-width="58" stroke-linecap="round"/>
+    <path id="trail" d="${PATH}" fill="none" stroke="#6b4a2c" stroke-width="44" stroke-linecap="round"/>
+    <path d="${PATH}" fill="none" stroke="#8a6440" stroke-width="3" stroke-dasharray="2 18" stroke-linecap="round"/>
+    <path id="walked" d="${PATH}" fill="none" stroke="#ffb53d" stroke-opacity=".35" stroke-width="10" stroke-linecap="round"/>
+    <g id="pumpkins"></g><g id="nodes"></g>
+    <g id="lantern"><circle r="44" fill="url(#lglow)"/><circle r="11" fill="#ffe2a3" stroke="#7a3f05" stroke-width="3"/><path d="M-6 -12h12v-6h-12z" fill="#3a2a1c"/></g>
+    <text x="70" y="604" fill="#f4ead2" font-family="Atkinson Hyperlegible, sans-serif" font-size="18" text-anchor="middle">ENTRANCE</text>
+    <rect width="1000" height="620" fill="url(#vig)" pointer-events="none"/>`;
+  const trail=$('#trail'),L=trail.getTotalLength();
+  lens=[];pts=[];for(let k=0;k<=8;k++){const l=L*k/8;lens.push(l);pts.push(trail.getPointAtLength(l));}
+  const wk=$('#walked');wk.style.strokeDasharray=L;wk.style.strokeDashoffset=L;
+  let pk='';[[.06,.03],[.19,.1],[.33,.08],[.5,.11],[.64,.07],[.79,.1],[.92,.06]].forEach(([f,o],i)=>{const p=trail.getPointAtLength(L*f);const dx=(i%2?1:-1)*46;pk+=`<g transform="translate(${(p.x+dx).toFixed(0)} ${(p.y-10).toFixed(0)})"><ellipse rx="13" ry="10" fill="#ff8a3d"/><path d="M-5 -9v-6h4" stroke="#3d6b33" stroke-width="3" fill="none"/></g>`;});
+  $('#pumpkins').innerHTML=pk;
+  mapBuilt=true;
+}
+function nextIdx(){for(let i=0;i<GATES.length;i++) if(!S.done.includes(i)) return i;return 7;}
+function renderMap(animFrom){
+  if(!mapBuilt) buildMap();
+  const n=nextIdx();
+  let h='';
+  for(let k=1;k<=8;k++){
+    const p=pts[k],gi=k-1,isExit=k===8;
+    const done=!isExit&&S.done.includes(gi), next=gi===n;
+    const fill=done?'#6fd6c8':next?'#ffb53d':'#3a416f';
+    const label=isExit?'EXIT':(done?GATES[gi].letter:String(k));
+    const name=isExit?'Exit Gate':GATES[gi].name.replace('The ','');
+    h+=`<g class="node ${next?'next':''}" data-i="${gi}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})">
+      ${next?`<circle class="ring" r="34" fill="none" stroke="#ffb53d" stroke-width="4"/>`:''}
+      <circle r="${isExit?30:26}" fill="${fill}" stroke="#0d1230" stroke-width="4"/>
+      <text y="${isExit?6:9}" text-anchor="middle" font-family="Rye, serif" font-size="${isExit?16:24}" fill="${done||next?'#1a1000':'#c9bfa6'}">${label}</text>
+      <rect x="-70" y="${k%2?-66:36}" width="140" height="24" rx="12" fill="#0d1230" fill-opacity=".8"/>
+      <text y="${k%2?-49:53}" text-anchor="middle" font-family="Atkinson Hyperlegible, sans-serif" font-size="14" fill="#f4ead2">${esc(name)}</text></g>`;
+  }
+  $('#nodes').innerHTML=h;
+  $('#mapList').innerHTML=GATES.map((g,i)=>`<li>Gate ${i+1}, ${esc(g.name)}: ${S.done.includes(i)?'cracked, letter '+g.letter:(i===n?'next up':'locked')}</li>`).join('')+`<li>Exit Gate: ${n===7?'open, next up':'locked'}</li>`;
+  $('#nodes').querySelectorAll('.node.next').forEach(g=>{
+    g.addEventListener('click',goNext);
+  });
+  const target=lens[n<7?n:7]*(1)+0;
+  const tgtIdx=n<7?n:7; // lantern rests at the gate just cleared (or entrance)
+  const restK=S.done.length; // 0..7 → point index
+  const from=(animFrom!=null)?lens[restK-1]:lens[restK], to=lens[restK];
+  moveLantern(from,to);
+  const L=$('#trail').getTotalLength();$('#walked').style.strokeDashoffset=L-to;
+  $('#mapTitle').textContent=S.done.length?`${S.done.length} of 7 gates cracked`:'Follow your lantern';
+  if(n<7){$('#mapMsg').innerHTML=`Next up: <b>Gate ${n+1}, ${esc(GATES[n].name)}</b>.`;$('#mapGo').textContent=`Enter Gate ${n+1}`;}
+  else{$('#mapMsg').innerHTML='All seven letters collected. <b>The Exit Gate</b> is waiting.';$('#mapGo').textContent='Go to the Exit Gate';}
+}
+function moveLantern(a,b){
+  const trail=$('#trail'),lan=$('#lantern');const t0=performance.now(),dur=(RM||a===b)?0:1400;
+  const step=now=>{const k=dur?Math.min(1,(now-t0)/dur):1;const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;const p=trail.getPointAtLength(a+(b-a)*e);
+    lan.setAttribute('transform',`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`);if(k<1) requestAnimationFrame(step);};
+  requestAnimationFrame(step);
+}
+function goNext(){const n=nextIdx();hush();if(n<7) openGate(n);else openFinal();}
+$('#mapGo').addEventListener('click',goNext);
+
+function renderSlots(){
+  $('#slots').innerHTML=Array.from({length:7},(_,i)=>{const l=S.letters[i];return `<span class="slot ${l?'got':''}" aria-label="${l?'Letter '+l:'Empty'}">${l||'?'}</span>`;}).join('');
+  $('#who').textContent=S.name?('🔦 '+S.name):'';
+  $('#slotsSr').textContent=`Exit password letters collected: ${S.letters.length} of 7${S.letters.length?', '+S.letters.join(', '):''}.`;
+}
+
+/* ---------- final ---------- */
+let mfaTimer=0,mfaCode='';
+function openFinal(){
+  playCut('exit',()=>{
+    $('#finalA').hidden=false;$('#finalB').hidden=true;$('#pwIn').value='';
+    $('#tiles').innerHTML=S.letters.map((l,i)=>`<button type="button" class="tile" data-l="${l}" aria-label="Add letter ${l}" style="animation-delay:${i*.08}s">${l}</button>`).join('');
+    $('#tiles').querySelectorAll('.tile').forEach(t=>t.addEventListener('click',()=>{const inp=$('#pwIn');if(inp.value.length>=12) return;inp.value+=t.dataset.l;t.disabled=true;sfx.tick();
+      $('#fFb').className='fb info';$('#fFb').textContent=`Password so far: ${inp.value.split('').join(' ')}`;
+      const nx=$('#tiles').querySelector('.tile:not([disabled])');if(nx) nx.focus();else $('#pwForm button').focus();}));
+    const f=$('#fFb');f.className='fb info';f.textContent="Hint from Kernel: it's what defenders hold up to block attacks, and there's more than one of them.";
+    show('s-final');
+  });
+}
+function resetTiles(){$('#tiles').querySelectorAll('.tile').forEach(t=>t.disabled=false);}
+$('#pwBack').addEventListener('click',()=>{const inp=$('#pwIn');const v=inp.value;if(!v) return;const last=v.slice(-1).toUpperCase();inp.value=v.slice(0,-1);
+  const t=[...$('#tiles').querySelectorAll('.tile[disabled]')].reverse().find(x=>x.dataset.l===last);if(t) t.disabled=false;$('#fFb').className='fb info';$('#fFb').textContent=inp.value?`Password so far: ${inp.value.split('').join(' ')}`:'Password cleared.';});
+$('#pwClear').addEventListener('click',()=>{$('#pwIn').value='';resetTiles();$('#fFb').className='fb info';$('#fFb').textContent='Password cleared.';const t=$('#tiles .tile');if(t) t.focus();});
+$('#pwIn').addEventListener('input',resetTiles);
+$('#pwForm').addEventListener('submit',e=>{
+  e.preventDefault();const v=$('#pwIn').value.trim().toUpperCase().replace(/\s/g,'');const f=$('#fFb');
+  if(v==='SHIELDS'){sfx.ok();setTimeout(()=>{try{$('#mfaApprove').focus();}catch(_){}},80);f.className='fb ok';f.innerHTML='<strong>SHIELDS is correct!</strong> The gate starts to creak open, but wait…';$('#finalA').hidden=true;$('#finalB').hidden=false;startMfa();hush();speak("Ha! I peeked over your shoulder and stole that password. Now I can open the gate too!",'malcaw');}
+  else if(v.length!==7){resetTiles();$('#pwIn').value='';wrongFx($('#pwForm'));f.className='fb bad';f.innerHTML='<strong>Use all seven letters</strong>, each one exactly once.';}
+  else{resetTiles();$('#pwIn').value='';wrongFx($('#pwForm'));f.className='fb bad';f.innerHTML='<strong>The gate won\'t budge.</strong> Think: what does a defender hold up? Make the word plural.';}
+});
+function newCode(){mfaCode=String(Math.floor(100000+Math.random()*900000));$('#mfaCode').textContent=mfaCode.slice(0,3)+' '+mfaCode.slice(3);$('#mfaCode').setAttribute('aria-label','Code: '+mfaCode.split('').join(' '));}
+function startMfa(){newCode();$('#mfaIn').value='';}
+function focusFinal(){const f=$('#fFb');f.setAttribute('tabindex','-1');try{f.focus();}catch(e){}}
+function mfaWin(how){sfx.win();const f=$('#fFb');f.className='fb ok';f.innerHTML=`<strong>Verified!</strong> ${how} Two factors beat one stolen password.`;focusFinal();setTimeout(()=>playCut('outro',showBadge),wait(1400));}
+$('#mfaApprove').addEventListener('click',()=>mfaWin('You approved the sign-in on your lantern.'));
+$('#mfaNew').addEventListener('click',()=>{newCode();sfx.tick();$('#fFb').className='fb info';$('#fFb').textContent='New code sent to your lantern: '+mfaCode.split('').join(' ');});
+$('#mfaForm').addEventListener('submit',e=>{
+  e.preventDefault();const v=$('#mfaIn').value.replace(/\D/g,'');const f=$('#fFb');
+  if(v===mfaCode){mfaWin('Password plus lantern code.');}
+  else{wrongFx($('#mfaForm'));f.className='fb bad';f.innerHTML='<strong>Code doesn\'t match.</strong> Type the six digits showing on your lantern right now. Codes change every 30 seconds.';}
+});
+
+/* ---------- badge ---------- */
+function showBadge(){
+  const secs=Math.round((Date.now()-S.start)/1000),mm=Math.floor(secs/60),ss=String(secs%60).padStart(2,'0');
+  const date=new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+  const nm=esc(S.name.toUpperCase());
+  const icons=['🔑','🎣','🛡','🔐','🗣','🐛','🔥'];
+  $('#badgeHolder').innerHTML=`<svg id="badgesvg" viewBox="0 0 380 460" role="img" aria-label="Maze Defender badge awarded to ${esc(S.name)} on ${esc(date)}. Escaped the Corn-ered Cyber Maze in ${mm} minute${mm===1?'':'s'} ${+ss} second${+ss===1?'':'s'}.">
+    <defs><linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3170"/><stop offset="1" stop-color="#121839"/></linearGradient>
+      <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe2a3"/><stop offset=".5" stop-color="#ffb53d"/><stop offset="1" stop-color="#b06f10"/></linearGradient></defs>
+    <path d="M190 12 L360 66 V220 C360 330 280 410 190 448 C100 410 20 330 20 220 V66 Z" fill="url(#rim)"/>
+    <path d="M190 30 L344 78 V220 C344 318 272 390 190 428 C108 390 36 318 36 220 V78 Z" fill="url(#bg1)"/>
+    <circle cx="190" cy="140" r="58" fill="#ffe2a3" opacity=".95"/>
+    ${[-40,-20,0,20,40].map((d,i)=>`<path d="M${190+d} 204 q${i%2?4:-4} -40 ${i%2?-2:2} -${70-Math.abs(d)/2}" stroke="#3d6b33" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="${190+d+(i%2?3:-3)}" cy="${170-Math.abs(d)/4}" rx="5" ry="13" fill="#e9b949"/>`).join('')}
+    <rect x="44" y="206" width="292" height="44" rx="8" fill="#ffb53d"/>
+    <text x="190" y="236" text-anchor="middle" font-family="Rye, serif" font-size="24" fill="#2a1700">MAZE DEFENDER</text>
+    <text x="190" y="282" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="3" fill="#6fd6c8">AWARDED TO</text>
+    <text x="190" y="316" text-anchor="middle" font-family="Rye, serif" font-size="${nm.length>12?20:28}" fill="#f4ead2">${nm}</text>
+    <text x="190" y="346" text-anchor="middle" font-family="Atkinson Hyperlegible, sans-serif" font-size="13" fill="#c9bfa6">Escaped the Corn-ered Cyber Maze</text>
+    <text x="190" y="366" text-anchor="middle" font-family="Atkinson Hyperlegible, sans-serif" font-size="13" fill="#c9bfa6">${esc(date)} · Escape time ${mm}:${ss}</text>
+    <text x="190" y="400" text-anchor="middle" font-size="18" letter-spacing="4">${icons.join('')}</text>
+  </svg>`;
+  renderSlots();show('s-badge');sfx.win();confetti();
+}
+function confetti(){
+  if(RM) return;const c=$('#confetti');c.innerHTML='';const cols=['#ffb53d','#6fd6c8','#ff8a3d','#f4ead2','#7fe08f'];
+  for(let i=0;i<90;i++){const d=document.createElement('i');d.style.left=Math.random()*100+'vw';d.style.background=cols[i%cols.length];d.style.animationDuration=(2.4+Math.random()*2.4)+'s';d.style.animationDelay=(Math.random()*.8)+'s';c.appendChild(d);}
+  setTimeout(()=>{c.innerHTML='';},6000);
+}
+
+/* ---------- exit + reset ---------- */
+let lastFocus=null;
+function askExit(){lastFocus=document.activeElement;$('#confirm').hidden=false;setTimeout(()=>$('#cfStay').focus(),20);}
+function closeExit(){$('#confirm').hidden=true;if(lastFocus&&document.contains(lastFocus)){try{lastFocus.focus();}catch(e){}}}
+function resetAll(){
+  hush();clearT();P.token++;P.onDone=null;clearInterval(mfaTimer);stopLoop();
+  S=fresh();cur=null;lastFocus=null;srMode=false;audioOn=true;$('#srIn').checked=false;$('#soundBtn').textContent='🔊 Voice on';
+  $('#nameIn').value='';$('#nameErr').textContent='';$('#gBody').innerHTML='';$('#badgeHolder').innerHTML='';$('#confetti').innerHTML='';
+  mapBuilt=false;renderSlots();closeExit();show('s-title');
+}
+$('#exitBtn').addEventListener('click',askExit);
+$('#badgeExit').addEventListener('click',askExit);
+$('#cfStay').addEventListener('click',closeExit);
+$('#cfGo').addEventListener('click',resetAll);
+document.addEventListener('keydown',e=>{
+  if($('#confirm').hidden) return;
+  if(e.key==='Escape') closeExit();
+  if(e.key==='Tab'){const a=$('#cfStay'),b=$('#cfGo');if(e.shiftKey&&document.activeElement===a){e.preventDefault();b.focus();}else if(!e.shiftKey&&document.activeElement===b){e.preventDefault();a.focus();}}
+});
+
+/* ---------- start ---------- */
+$('#startForm').addEventListener('submit',e=>{
+  e.preventDefault();const v=$('#nameIn').value.trim();
+  if(!v){$('#nameErr').textContent='Type a first name or initials so your badge knows who you are.';$('#nameIn').focus();return;}
+  unlocked=true;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume();}catch(_){}
+  if(tts.ok){try{speechSynthesis.cancel();}catch(_){}}
+  srMode=$('#srIn').checked;audioOn=!srMode;$('#soundBtn').textContent=audioOn?'🔊 Voice on':'🔇 Voice off';
+  S=fresh();S.name=v;S.start=Date.now();renderSlots();
+  playCut('intro',()=>{renderMap();show('s-map');});
+});
+
+// title art corn
+(()=>{let s='';for(let i=0;i<70;i++){const x=i*15+Math.random()*8,h=120+Math.random()*120,base=420,c=i%3?'#1f2a48':'#29452f';
+  s+=`<path d="M${x} ${base} Q${x+6} ${base-h/2} ${x+10} ${base-h}" stroke="${c}" stroke-width="5" fill="none"/><path d="M${x+3} ${base-h*.5} q-26 -14 -34 6 q18 -6 34 -6" fill="${c}"/>`;}
+  $('#titleCorn').innerHTML=s;})();
+renderSlots();
+})();
+</script>
+
+</body>
+</html>
